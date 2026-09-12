@@ -1,0 +1,241 @@
+/* ==========================================================================
+   StreamSports99 — TV & legacy browser compatibility
+   Loaded after styles.css. Scopes:
+     .tv          smart-TV mode (D-pad, overscan, big focus targets)
+     .no-flexgap  engines without flexbox `gap` (Chromium < 84 / old TV boxes)
+     .no-grid     engines without CSS grid (Chromium < 57)
+     .no-cssvars  engines without CSS custom properties (Chromium < 49) —
+                  emergency readable skin
+   Classes are added to <html> by js/main.js at startup.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. TV MODE — D-pad friendly, overscan-safe, larger targets
+   ========================================================================== */
+.tv body { font-size: 17.5px; }
+
+/* Overscan safe area: keep content away from screen edges (~2.5% each side) */
+.tv .container,
+.tv .container-narrow { width: 92%; }
+.tv .site-header .header-inner { height: 72px; }
+.tv .announce { padding-top: 12px; padding-bottom: 12px; font-size: 15px; }
+.tv .back-to-top { right: 40px; bottom: 40px; width: 52px; height: 52px; }
+
+/* Strong, unmissable focus ring for D-pad navigation */
+.tv a:focus,
+.tv button:focus,
+.tv input:focus,
+.tv [tabindex]:focus {
+  outline: 4px solid #34d399 !important;
+  outline-offset: 2px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.25) !important;
+}
+.tv .endpoint-card:focus-within { border-color: #22c55e; }
+.tv .player-stage:focus { outline: 4px solid #34d399 !important; }
+
+/* Bigger text + hit targets */
+.tv .main-nav a { font-size: 16px; padding: 10px 16px; }
+.tv .sport-chip { font-size: 14.5px; padding: 10px 16px; }
+.tv .sport-chip .chip-count { font-size: 13px; }
+.tv .btn { font-size: 15.5px; padding: 12px 22px; }
+.tv .pc-btn { width: 46px; height: 44px; }
+.tv .pc-time { font-size: 14px; }
+.tv .pc-bufferpill { font-size: 13px; }
+.tv .ep-open { font-size: 14px; padding: 8px 14px; }
+.tv .icon-btn { width: 38px; height: 38px; }
+.tv .stream-item { padding: 14px 16px; }
+.tv .si-main strong { font-size: 15px; }
+.tv .si-main small { font-size: 13px; }
+.tv .footer-col a { font-size: 15.5px; padding: 7px 0; }
+.tv .poster-play { width: 104px; height: 104px; }
+.tv .poster-sub { font-size: 15.5px; }
+.tv .side-hint { font-size: 13.5px; }
+.tv .player-note { font-size: 14px; }
+
+/* Controls never auto-hide on TV (pointerless UI) */
+.tv .player-stage.controls-hidden { cursor: auto; }
+.tv .player-stage.controls-hidden .player-controls {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* No hover on TV: make "hover" states apply to focus instead */
+.tv .endpoint-card:focus,
+.tv .feature-card:focus-within,
+.tv .step-card:focus-within,
+.tv .stream-item:focus {
+  border-color: #22c55e;
+  transform: translateY(-2px);
+}
+
+/* Spatnav hint: hide the mouse-only back-to-top on TV (T key / D-pad instead) */
+.tv .back-to-top { display: none; }
+
+/* ==========================================================================
+   2. NO-FLEXGAP — margin fallbacks (engines where flex `gap` is ignored)
+   ========================================================================== */
+.no-flexgap .btn > * + * { margin-left: 8px; }
+.no-flexgap .hero-badge > * + * { margin-left: 9px; }
+.no-flexgap .header-actions > * + * { margin-left: 10px; }
+.no-flexgap .main-nav > * + * { margin-left: 4px; }
+.no-flexgap .hero-actions > * + * { margin-left: 14px; }
+.no-flexgap .hero-stats > * + * { margin-left: 14px; }
+.no-flexgap .announce-text > * + * { margin-left: 9px; }
+.no-flexgap .musiqly-features > * + * { margin-left: 16px; }
+.no-flexgap .musiqly-features li { margin-top: 6px; }
+.no-flexgap .musiqly-brand > * + * { margin-left: 13px; }
+.no-flexgap .endpoint-toolbar > * + * { margin-left: 18px; }
+.no-flexgap .ep-head > * + * { margin-left: 12px; }
+.no-flexgap .ep-url > * + * { margin-left: 8px; }
+.no-flexgap .support-actions > * + * { margin-left: 12px; }
+.no-flexgap .callout > * + * { margin-left: 14px; }
+.no-flexgap .code-panel-head > * + * { margin-left: 12px; }
+.no-flexgap .code-dots > * + * { margin-left: 6px; }
+.no-flexgap .sport-pills > * + * { margin-left: 6px; }
+.no-flexgap .kbd-combo > * + * { margin-left: 5px; }
+.no-flexgap .shortcut-list li { margin-top: 4px; }
+.no-flexgap .keydiff-list li { margin-top: 13px; }
+.no-flexgap .endpoint-card > * + * { margin-top: 10px; }
+.no-flexgap .side-card h3 > * + * { margin-left: 9px; }
+.no-flexgap .stream-list > * + * { margin-top: 8px; }
+.no-flexgap .profile-list > * + * { margin-top: 8px; }
+.no-flexgap .side-facts > * + * { margin-top: 7px; }
+.no-flexgap .side-facts li { margin-top: 7px; }
+.no-flexgap .url-row > * + * { margin-left: 8px; }
+.no-flexgap .support-card > * + * { margin-top: 18px; }
+.no-flexgap .support-actions > * + * { margin-top: 12px; }
+.no-flexgap .player-note > * + * { margin-left: 18px; }
+.no-flexgap .player-note > span { margin-top: 6px; }
+.no-flexgap .pc-row > * + * { margin-left: 4px; }
+.no-flexgap .pc-volume > * + * { margin-left: 2px; }
+.no-flexgap .pc-live > * + * { margin-left: 7px; }
+.no-flexgap .pm-list > * + * { margin-top: 2px; }
+.no-flexgap .pm-opt > * + * { margin-left: 12px; }
+.no-flexgap .stream-item > * + * { margin-left: 10px; }
+.no-flexgap .modal-head > * + * { margin-left: 14px; }
+.no-flexgap .footer-disclaimer > * + * { margin-left: 13px; }
+.no-flexgap .footer-bottom > * + * { margin-left: 16px; }
+.no-flexgap .filter-box input { padding-right: 40px; }
+
+/* ==========================================================================
+   3. NO-GRID — flexbox fallbacks (engines without CSS grid)
+   ========================================================================== */
+.no-grid .feature-grid,
+.no-grid .coverage-grid,
+.no-grid .steps-grid,
+.no-grid .endpoint-grid,
+.no-grid .hero-stats,
+.no-grid .footer-grid,
+.no-grid .code-grid,
+.no-grid .player-layout,
+.no-grid .stream-list,
+.no-grid .profile-list,
+.no-grid .side-facts,
+.no-grid .keydiff-list,
+.no-grid .ps-list,
+.no-grid .format-table-wrap { display: block; }
+
+.no-grid .feature-card,
+.no-grid .step-card { width: 48%; display: inline-block; vertical-align: top; margin: 0 1.3% 16px 0; }
+.no-grid .coverage-grid li { width: 32.2%; display: inline-block; vertical-align: top; margin: 0 0.6% 8px 0; }
+.no-grid .hero-stats .stat { width: 23.5%; display: inline-block; vertical-align: top; margin: 0 1% 12px 0; }
+.no-grid .endpoint-card { margin-bottom: 14px; }
+.no-grid .code-panel { margin-bottom: 16px; }
+.no-grid .player-side { margin-top: 18px; }
+.no-grid .player-main { display: block; }
+
+.no-grid .footer-grid .footer-brand { display: block; margin-bottom: 30px; }
+.no-grid .footer-col { display: inline-block; vertical-align: top; width: 30%; min-width: 180px; margin: 0 2% 26px 0; }
+
+.no-grid .stream-list .stream-item,
+.no-grid .profile-list .profile-opt { display: block; margin-bottom: 8px; }
+.no-grid .side-facts li { display: block; margin-bottom: 7px; }
+.no-grid .keydiff-list li { display: block; margin-bottom: 13px; }
+.no-grid .ps-list dt { display: inline-block; min-width: 45%; }
+.no-grid .ps-list dd { display: inline-block; width: 50%; }
+
+/* grid place-items centering -> flex centering */
+.no-grid .brand-mark,
+.no-grid .badge-dot,
+.no-grid .feature-icon,
+.no-grid .step-number,
+.no-grid .ep-num,
+.no-grid .poster-play,
+.no-grid .spin-ring,
+.no-grid .support-icon,
+.no-grid .musiqly-logo,
+.no-grid .back-to-top,
+.no-grid .icon-btn,
+.no-grid .pc-btn,
+.no-grid .ad-slot {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+}
+
+/* ==========================================================================
+   4. NO-CSSVARS — emergency readable skin (ancient TV box browsers)
+      Everything var()-based is re-stated with literal values.
+   ========================================================================== */
+.no-cssvars body { background: #070b12; color: #e8eef7; }
+.no-cssvars .announce { background: #231a05; color: #fcd34d; border-bottom: 1px solid #6b4c0a; }
+.no-cssvars .site-header { background: #0a0f1a; border-bottom: 1px solid #2a3547; }
+.no-cssvars .main-nav a { color: #9aa8bd; }
+.no-cssvars .main-nav a.active { color: #34d399; background: #12291b; }
+.no-cssvars .sportsbar { background: #0a0f1a; border-bottom: 1px solid #2a3547; }
+.no-cssvars .sport-chip { background: #0e1522; border: 1px solid #2a3547; color: #9aa8bd; }
+.no-cssvars .section-alt { background: #0a0f1a; border-top: 1px solid #2a3547; border-bottom: 1px solid #2a3547; }
+.no-cssvars .feature-card,
+.no-cssvars .step-card,
+.no-cssvars .endpoint-card,
+.no-cssvars .keydiff-card,
+.no-cssvars .support-card,
+.no-cssvars .side-card { background: #0e1522; border: 1px solid #2a3547; }
+.no-cssvars .coverage-grid li { background: #0e1522; border: 1px solid #2a3547; color: #9aa8bd; }
+.no-cssvars .hero-badge { color: #34d399; background: #12291b; border: 1px solid #1e4d33; }
+.no-cssvars .kicker { color: #34d399; background: #12291b; border: 1px solid #1e4d33; }
+.no-cssvars .btn-primary { background: #16a34a; color: #04220f; }
+.no-cssvars .btn-outline { background: #0e1522; border: 1px solid #3d4a5f; color: #e8eef7; }
+.no-cssvars .stat { background: #0e1522; border: 1px solid #2a3547; }
+.no-cssvars .ep-url { background: #070b12; border: 1px solid #2a3547; }
+.no-cssvars .ep-num { color: #34d399; background: #12291b; border: 1px solid #1e4d33; }
+.no-cssvars .code-panel { background: #0a0f1a; border: 1px solid #3d4a5f; }
+.no-cssvars .code-panel-head { background: #121b2c; border-bottom: 1px solid #2a3547; }
+.no-cssvars .callout { background: #0b1a26; border: 1px solid #1e4966; color: #9aa8bd; }
+.no-cssvars .musiqly { background: #4c1d95; border: 1px solid #7c6bd6; }
+.no-cssvars .ad-slot { border: 2px dashed #3d4a5f; background: #0a0f1a; color: #64748b; }
+.no-cssvars .player-stage { background: #000; border: 1px solid #3d4a5f; }
+.no-cssvars .player-controls { background: linear-gradient(transparent, #000); }
+.no-cssvars .player-menu { background: #0a0f1a; border: 1px solid #3d4a5f; }
+.no-cssvars .player-stats { background: #0a0f1a; border: 1px solid #3d4a5f; }
+.no-cssvars .stream-item { background: #121b2c; border: 1px solid #2a3547; }
+.no-cssvars .stream-item.active { border-color: #22c55e; background: #12291b; }
+.no-cssvars .profile-opt { border: 1px solid #2a3547; }
+.no-cssvars .profile-opt.active { border-color: #22c55e; background: #12291b; }
+.no-cssvars .url-row input { background: #070b12; border: 1px solid #3d4a5f; color: #e8eef7; }
+.no-cssvars .filter-box input { background: #0e1522; border: 1px solid #3d4a5f; color: #e8eef7; }
+.no-cssvars .site-footer { background: #05080e; border-top: 1px solid #2a3547; }
+.no-cssvars .footer-disclaimer { border: 1px solid #6b4c0a; background: #1c1503; color: #9aa8bd; }
+.no-cssvars .modal { background: #0e1522; border: 1px solid #3d4a5f; }
+.no-cssvars .kbd-combo kbd { background: #121b2c; border: 1px solid #3d4a5f; color: #e8eef7; }
+.no-cssvars .support-email { color: #34d399; }
+.no-cssvars a { color: #34d399; }
+.no-cssvars .footer-col a { color: #64748b; }
+.no-cssvars .toast { background: #121b2c; border: 1px solid #1e4d33; color: #e8eef7; }
+.no-cssvars .cta-banner { background: #0e1522; border: 1px solid #1e4d33; }
+.no-cssvars .poster-play { background: #16a34a; color: #04220f; }
+.no-cssvars .player-poster { background: #05080d; }
+.no-cssvars .pc-played { background: #16a34a; }
+.no-cssvars .pc-btn { color: #e8eef7; }
+.no-cssvars .pc-bufferpill.good { color: #86efac; }
+.no-cssvars .pc-bufferpill.warn { color: #fcd34d; }
+.no-cssvars .pc-bufferpill.low { color: #fca5a5; }
+.no-cssvars .si-badge.si-live { color: #fca5a5; border-color: #7f1d1d; background: #2a0d0d; }

@@ -1,6 +1,6 @@
 # Heiken-sports — StreamSports99 API Docs
 
-A dark-themed, fully static **API Docs page** for StreamSports99, the sports-streaming site powered by the [cdnlivetv.is](https://cdnlivetv.is) real-time sports data API — now with a **working stream player demo** (custom controls + a buffering strategy tuned for live sport).
+A dark-themed, fully static **API Docs page** for StreamSports99, the sports-streaming site powered by the [cdnlivetv.is](https://cdnlivetv.is) real-time sports data API — with a **working stream player demo** (custom controls + a buffering strategy tuned for live sport), **smart-TV browser support**, and an **Android app** (Android 6.0+ / Android TV).
 
 Built with **plain HTML + CSS + vanilla JavaScript**. No build step, no framework. The only vendored dependency is [hls.js](https://github.com/video-dev/hls.js) (`js/vendor/hls.min.js`) for HLS playback in MSE browsers.
 
@@ -71,14 +71,31 @@ A production-style demo of "Step 3: Embed Streams".
 
 With the **player focused**: `Space` play/pause · `←`/`→` seek 10s · `↑`/`↓` volume · `M` mute · `F` fullscreen · `I` stats
 
+## Smart TV / old-browser compatibility
+
+The site runs on smart-TV browsers and old Android WebView engines:
+
+- **D-pad spatial navigation** (`js/main.js`) — arrow keys move focus to the nearest focusable element, ENTER activates; sliders/inputs keep native arrow behaviour
+- **TV mode** (`html.tv`) — overscan-safe margins, larger fonts and hit targets, always-visible player controls, unmissable focus ring. Auto-detected from the UA (Android TV, Fire TV `AFT*`, BRAVIA, WebOS, NetCast, HbbTV, …)
+- **Engine fallbacks** (`css/compat.css`) — flexbox-`gap` margin fallbacks (`.no-flexgap`), non-grid layouts for Chromium < 57 (`.no-grid`), literal-colour emergency skin for engines without CSS custom properties (`.no-cssvars`), `aspect-ratio`/`clamp()`/`inset` fallbacks, and `padStart`/`closest` polyfills
+- Practical baseline: **Chromium 49+** (Android 6.0.1 with an updated WebView), fully featured at Chromium 84+
+
+## Android app (Android 6.0+ / Android TV)
+
+A ~1 MB WebView wrapper in [`android/`](android/) — leanback launcher banner, D-pad support, HTML5 fullscreen video, autoplay enabled, offline fallback to the bundled copy of the site, crash recovery. See **[android/README.md](android/README.md)** for building the APK (GitHub Actions does it automatically — no local tools needed) and sideloading onto a TV.
+
 ## Structure
 
 ```
 index.html            # the page (all content)
 css/styles.css        # dark sports-streaming theme + player UI
-js/main.js            # endpoint list, filter, JSON highlighting, shortcuts, toasts
+css/compat.css        # TV mode + legacy-engine fallbacks (no-flexgap/no-grid/no-cssvars)
+js/main.js            # endpoints, filter, JSON highlighting, shortcuts, TV detection, D-pad spatial nav
 js/player.js          # stream player: controls, HLS engine, buffering & recovery
 js/vendor/hls.min.js  # hls.js 1.7.2 (vendored, no CDN needed)
+scripts/              # icon/banner generator + Android asset sync
+android/              # WebView app (Android 6.0+ / Android TV) — see android/README.md
+android/ci-workflow-reference.yml  # GitHub Actions APK build (copy to .github/workflows/ to activate)
 ```
 
 > Note: nav/footer links to pages other than API Docs (Schedule, Sports News, Premium, …) show a "not part of this build" toast — only the API Docs page was in scope. Demo streams in the player are public test feeds (Mux, Unified Streaming, Apple, Akamai, Google); the cdnlivetv.is API itself was unreachable from the build environment, so its data is represented exactly as documented.

@@ -1,0 +1,57 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.streamsports99.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.streamsports99.app"
+        // Android 6.0 / 6.0.1 (API 23) and everything newer, including Android TV
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    // Optional release signing passed from CI or command line:
+    //   -PksFile=release.keystore -PksPass=... -PksAlias=...
+    signingConfigs {
+        if (project.hasProperty('ksFile')) {
+            release {
+                storeFile file(project.property('ksFile'))
+                storePassword project.property('ksPass')
+                keyAlias project.property('ksAlias')
+                keyPassword project.property('ksPass')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (project.hasProperty('ksFile')) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    // The whole static site is bundled as assets — nothing else to package
+    sourceSets {
+        main {
+            assets.srcDirs = ['src/main/assets']
+        }
+    }
+}
+
+// No external dependencies: plain android.app.Activity + WebView.
+// Keeps the APK tiny (~1 MB) and the build fully offline-capable.
+dependencies {
+}
