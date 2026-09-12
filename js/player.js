@@ -18,6 +18,7 @@
    * ------------------------------------------------------------------ */
   var stage = $("#playerStage");
   var video = $("#demoVideo");
+  if (video) try { video.crossOrigin = "anonymous"; } catch(e){}
   if (!stage || !video) return;
 
   var poster      = $("#playerPoster");
@@ -62,6 +63,19 @@
   var loadBtn     = $("#loadUrlBtn");
   var unmutePill  = $("#unmutePill");
   var unmuteBtn   = $("#unmuteBtn");
+  // New minimal browse UI
+  var channelsGrid = $("#channelsGrid");
+  var channelsEmpty = $("#channelsEmpty");
+  var channelSearch = $("#channelSearch");
+  var channelSearchClear = $("#channelSearchClear");
+  var channelCount = $("#channelCount");
+  var filterCountEl = $("#filterCount");
+  var browseSection = $("#browse");
+  var playerSection = $("#player");
+  var backToBrowse = $("#backToBrowse");
+  var navWatchLink = $("#navWatchLink");
+  var nowPlayingTitle = $("#nowPlayingTitle");
+  var nowPlayingHint = $("#nowPlayingHint");
 
   // New UI elements (may be absent before embed patch — guard all uses)
   var apiList     = $("#apiStreamList");
@@ -79,6 +93,8 @@
   // everything on the stage that isn't a button/control and only allow
   // explicit control interactions.
   var RESTRICT_CLICKS = true;
+  var currentFilter = "all";
+  var currentSearch = "";
 
   var HlsRef     = typeof Hls !== "undefined" ? Hls : null;
   var MSE_OK     = !!(HlsRef && HlsRef.isSupported && HlsRef.isSupported());
@@ -262,6 +278,7 @@
         ALL_STREAMS = DEMO_STREAMS.slice();
         renderStreamList();
         renderApiList(); // will show empty state
+        renderChannelsGrid();
         return;
       }
       var url = endpoints[attempt++];
@@ -284,6 +301,7 @@
         ALL_STREAMS = merged;
         renderStreamList();
         renderApiList();
+        renderChannelsGrid();
         // If user passed ?channel= code, auto-select that channel
         if (QS_CHANNEL) {
           for (var k=0;k<API_CHANNELS.length;k++){
@@ -329,6 +347,89 @@
     }
     apiList.innerHTML = html;
   }
+
+
+  // --- Minimal browse: filter + channels grid (new UI) ---
+  function activeChannels() { return ALL_STREAMS; }
+  function filteredChannels() {
+    var q = (currentSearch||"").trim().toLowerCase();
+    var f = (currentFilter||"all").toLowerCase();
+    return activeChannels().filter(function(c){
+      var txt = (c.name+" "+c.meta+" "+(c.channel_code||"")).toLowerCase();
+      var matchFilter = (f==="all") || txt.indexOf(f) !== -1;
+      var matchSearch = !q || txt.indexOf(q) !== -1;
+      return matchFilter && matchSearch;
+    });
+  }
+  function initialsOf(name){
+    var parts = String(name||"C").trim().split(/\s+/);
+    var a = parts[0] ? parts[0][0] : "C";
+    var b = parts[1] ? parts[1][0] : "";
+    return (a+b).toUpperCase().slice(0,2);
+  }
+  function renderChannelsGrid(){
+    if (!channelsGrid) return;
+    var list = filteredChannels();
+    // update counts
+    if (channelCount) channelCount.textContent = String(list.length);
+    if (filterCountEl) {
+      var base = activeChannels().length;
+      var extra = (currentFilter!=="all" || currentSearch) ? " · filtered "+list.length+" / "+base : " · "+base+" channels";
+      filterCountEl.textContent = extra;
+    }
+    if (!list.length) {
+      channelsGrid.innerHTML = "";
+      if (channelsEmpty) channelsEmpty.hidden = false;
+      channelsGrid.setAttribute("aria-busy","false");
+      return;
+    }
+    if (channelsEmpty) channelsEmpty.hidden = true;
+    var html = "";
+    for (var i=0;i<list.length;i++){
+      var c = list[i];
+      // find index in ALL_STREAMS for selectStream
+      var allIdx = -1;
+      for (var j=0;j<ALL_STREAMS.length;j++) if (ALL_STREAMS[j].url===c.url) { allIdx=j; break; }
+      var isActive = S.url && S.url===c.url;
+      var badge = c.kind==="iframe" ? "EMBED" : (c.live ? "LIVE" : c.kind.toUpperCase());
+      var badgeCls = c.kind==="iframe" ? " embed" : (c.live ? "" : "");
+      var img = c.image ? '<img src="'+escapeHtml(c.image)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : "";
+      var fallback = c.image ? "" : '<span class="channel-thumb-fallback">'+escapeHtml(initialsOf(c.name))+'</span>';
+      html += '<button class="channel-card'+(isActive ? ' active' : '')+'" data-idx="'+allIdx+'" data-url="'+escapeHtml(c.url)+'" aria-label="Watch '+escapeHtml(c.name)+'">'
+            + '<span class="channel-thumb">'+img+fallback+'<span class="channel-thumb-badge'+badgeCls+'">'+escapeHtml(badge)+'</span></span>'
+            + '<span class="channel-body"><strong class="channel-title">'+escapeHtml(c.name)+'</strong><small class="channel-meta">'+escapeHtml(c.meta)+'</small><span class="channel-cta">Watch now →</span></span>'
+            + '</button>';
+    }
+    channelsGrid.innerHTML = html;
+    channelsGrid.setAttribute("aria-busy","false");
+  }
+  function showPlayerView(){
+    if (playerSection) playerSection.hidden = false;
+    if (browseSection) { /* keep browse visible but scroll to player — user said redirect to play screen */ }
+    try { playerSection && playerSection.scrollIntoView({behavior:"smooth", block:"start"}); } catch(e){ location.hash="#player"; }
+    if (navWatchLink) navWatchLink.classList.add("active");
+    if (nowPlayingTitle && S.name && S.name!=="—") { nowPlayingTitle.textContent = S.name; if (nowPlayingHint) nowPlayingHint.hidden=false; }
+  }
+  function showBrowseView(){
+    if (playerSection) { /* keep player mounted but scroll back */ }
+    try { browseSection && browseSection.scrollIntoView({behavior:"smooth", block:"start"}); } catch(e){ location.hash="#browse"; }
+    if (navWatchLink) navWatchLink.classList.remove("active");
+  }
+  function applyBrowseFilter(filter, search){
+    if (typeof filter==="string") currentFilter = filter;
+    if (typeof search==="string") currentSearch = search;
+    // update chip active state
+    var chips = document.querySelectorAll(".sportsbar .sport-chip[data-filter]");
+    for (var k=0;k<chips.length;k++){
+      var chip = chips[k];
+      var f = chip.getAttribute("data-filter");
+      var active = f===currentFilter;
+      chip.classList.toggle("is-active", active);
+      chip.setAttribute("aria-pressed", active?"true":"false");
+    }
+    renderChannelsGrid();
+  }
+
 
   var PROFILES = {
     smooth:   { label: "Smooth · 120s buffer", maxBufferLength: 120, maxMaxBufferLength: 300, backBufferLength: 90 },
@@ -512,6 +613,7 @@
    * Engine lifecycle
    * ------------------------------------------------------------------ */
   function destroyEngine() {
+    clearTimeout(S._loadingTimeout);
     if (S.hls) {
       try { S.hls.destroy(); } catch (e) { /* noop */ }
       S.hls = null;
@@ -543,8 +645,19 @@
     setState("loading");
     poster.hidden = true;
     showSpinner("Loading stream…");
+    if (nowPlayingTitle) nowPlayingTitle.textContent = name || url;
+    if (nowPlayingHint) nowPlayingHint.hidden = false;
+    if (playerSection && playerSection.hidden) playerSection.hidden = false;
     closeMenu();
     updateEmbedCode();
+    renderChannelsGrid();
+    // If still loading after 12s, hint (fixes "just buffering" stuck)
+    clearTimeout(S._loadingTimeout);
+    S._loadingTimeout = setTimeout(function(){
+      if (stage.getAttribute("data-state")==="loading") {
+        toastP("Still buffering — network slow or stream offline. Try another channel.");
+      }
+    }, 12000);
     // Reflect in URL without reloading (helps sharing/embed)
     try {
       var sp = new URLSearchParams(window.location.search);
@@ -601,6 +714,7 @@
       break;
     }
     loadStream(url, kind || "hls", name);
+    showPlayerView();
   }
 
   function attachHls(url) {
@@ -631,6 +745,10 @@
     S.hls = hls;
     S.engine = "hls.js " + (HlsRef.version || "");
 
+    // Ensure media attached before loading source (more reliable startup)
+    hls.on(HlsRef.Events.MEDIA_ATTACHED, function () {
+      hls.loadSource(url);
+    });
     hls.on(HlsRef.Events.MANIFEST_PARSED, function () {
       buildQualityMenu();
       syncLiveUI();
@@ -646,7 +764,6 @@
     });
     hls.on(HlsRef.Events.ERROR, onHlsError);
 
-    hls.loadSource(url);
     hls.attachMedia(video);
     updateEngineNote();
   }
@@ -731,6 +848,7 @@
   }
 
   function fatal(msg) {
+    clearTimeout(S._loadingTimeout);
     destroyEngine();
     hideSpinner();
     setState("error");
@@ -763,6 +881,7 @@
     syncLiveUI();
   });
   video.addEventListener("playing", function () {
+    clearTimeout(S._loadingTimeout);
     setState("playing");
     hideSpinner();
     startTicker();
@@ -1262,6 +1381,7 @@
     // Sync API list active states too
     if (apiList) renderApiList();
     updateEmbedCode();
+    renderChannelsGrid();
   }
 
   function selectStream(i) {
@@ -1279,6 +1399,7 @@
       });
     }
     loadStream(s.url, s.kind, s.name);
+    showPlayerView();
   }
 
   streamList.addEventListener("click", function (e) {
@@ -1312,6 +1433,60 @@
     });
   }
   if (apiRefresh) apiRefresh.addEventListener("click", fetchApiChannels);
+
+  // New minimal UI: filter chips, search, grid click, back
+  (function initBrowseUI(){
+    if (channelsGrid) {
+      channelsGrid.addEventListener("click", function(e){
+        var btn = e.target.closest(".channel-card");
+        if (!btn) return;
+        var idx = parseInt(btn.getAttribute("data-idx"), 10);
+        if (!isNaN(idx) && idx>=0) selectStream(idx);
+        else {
+          var url = btn.getAttribute("data-url");
+          if (url) selectStreamByUrl(url, detectKind(url), btn.getAttribute("aria-label")||"Channel");
+        }
+      });
+      channelsGrid.addEventListener("keydown", function(e){
+        if (e.key==="Enter"||e.key===" "){
+          var btn = e.target.closest(".channel-card");
+          if (btn){ e.preventDefault(); btn.click(); }
+        }
+      });
+    }
+    var chips = document.querySelectorAll(".sportsbar [data-filter]");
+    for (var i=0;i<chips.length;i++){
+      (function(chip){
+        chip.addEventListener("click", function(){
+          var f = chip.getAttribute("data-filter")||"all";
+          applyBrowseFilter(f, currentSearch);
+          // optional scroll to browse
+          try{ browseSection && browseSection.scrollIntoView({behavior:"smooth"});}catch(e){}
+        });
+      })(chips[i]);
+    }
+    if (channelSearch) {
+      channelSearch.addEventListener("input", function(){
+        applyBrowseFilter(currentFilter, channelSearch.value);
+      });
+    }
+    if (channelSearchClear && channelSearch) {
+      channelSearchClear.addEventListener("click", function(){
+        channelSearch.value = "";
+        applyBrowseFilter(currentFilter, "");
+        channelSearch.focus();
+      });
+    }
+    if (backToBrowse) backToBrowse.addEventListener("click", function(){
+      showBrowseView();
+    });
+    if (navWatchLink) navWatchLink.addEventListener("click", function(e){
+      if (!S.url) { e.preventDefault(); toastP("Pick a channel first"); var el=document.getElementById("browse"); if(el) el.scrollIntoView({behavior:"smooth"}); return; }
+      e.preventDefault(); showPlayerView();
+    });
+    // also allow #player hash to show player
+    if (location.hash==="#player" && !playerSection.hidden) showPlayerView();
+  })();
 
   function loadFromInput() {
     var u = (urlInput.value || "").trim();
