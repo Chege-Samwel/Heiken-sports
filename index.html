@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Docs — StreamSports99</title>
+  <meta name="description" content="Free live sports data API documentation. 26 free endpoints from cdnlivetv.is delivering live game schedules, streaming links and event information from leagues worldwide.">
+  <meta name="theme-color" content="#070b12">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322c55e'/%3E%3Cstop offset='1' stop-color='%230d9488'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='40' height='40' rx='10' fill='url(%23g)'/%3E%3Cpath d='M16 12l13 8-13 8z' fill='white'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body id="top">
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <!-- Bookmark / mirror notice -->
+  <div class="announce" id="announce" role="note">
+    <span class="announce-text">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+      <span><strong>Important:</strong> Please bookmark <strong>StreamSports99.website</strong> as the backup mirror site. &nbsp;<span class="announce-kbd"><kbd>Ctrl</kbd>+<kbd>D</kbd></span></span>
+    </span>
+    <button class="announce-close" id="announceClose" aria-label="Dismiss notice">&times;</button>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header" id="siteHeader">
+    <div class="container header-inner">
+      <a class="brand" href="#top" aria-label="StreamSports99 home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" width="34" height="34"><defs><linearGradient id="bg-mark" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#0d9488"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#bg-mark)"/><path d="M16 12l13 8-13 8z" fill="#fff"/></svg>
+        </span>
+        <span class="brand-name">STREAMSPORTS<b>99</b></span>
+      </a>
+
+      <nav class="main-nav" id="mainNav" aria-label="Primary">
+        <a href="#" data-page="Schedule">Schedule</a>
+        <a href="#" data-page="Sports News">Sports News</a>
+        <a href="#" data-page="Live Scoreboard">Live Scoreboard</a>
+        <a href="#main" class="active" aria-current="page">API Docs</a>
+        <a href="#" data-page="Install App">Install App</a>
+        <a href="#" data-page="Updates">Updates</a>
+      </nav>
+
+      <div class="header-actions">
+        <a class="btn btn-ghost" href="#" data-page="Premium">Premium</a>
+        <a class="btn btn-outline" href="#" data-page="Sign In">Sign In</a>
+        <a class="btn btn-primary" href="#" data-page="Register">Register</a>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="mainNav">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sports categories bar -->
+  <nav class="sportsbar" aria-label="Sports categories">
+    <button class="sportsbar-arrow sportsbar-arrow-left" id="sbLeft" aria-label="Scroll categories left">&lsaquo;</button>
+    <div class="sportsbar-track" id="sportsbarTrack">
+      <a href="#ep-1" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">NEWS TV</span><span class="chip-count hot">24</span></a>
+      <a href="#ep-1" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">LIVE TV</span><span class="chip-count hot">414</span></a>
+      <a href="#ep-20" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">FOOTBALL</span><span class="chip-count">0</span></a>
+      <a href="#ep-21" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">BASKETBALL</span><span class="chip-count">0</span></a>
+      <a href="#ep-22" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">HOCKEY</span><span class="chip-count">0</span></a>
+      <a href="#ep-23" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">BASEBALL</span><span class="chip-count hot">4</span></a>
+      <a href="#ep-3" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">SOCCER</span><span class="chip-count">0</span></a>
+      <a href="#ep-24" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">FIGHT</span><span class="chip-count">0</span></a>
+      <a href="#ep-4" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">CRICKET</span><span class="chip-count">0</span></a>
+      <a href="#ep-9" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">TENNIS</span><span class="chip-count">0</span></a>
+      <a href="#ep-6" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">GOLF</span><span class="chip-count">0</span></a>
+      <a href="#ep-19" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">MOTORSPORT</span><span class="chip-count">0</span></a>
+      <a href="#ep-11" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">CYCLING</span><span class="chip-count">0</span></a>
+      <a href="#ep-10" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">VOLLEYBALL</span><span class="chip-count">0</span></a>
+      <a href="#ep-12" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">BADMINTON</span><span class="chip-count">0</span></a>
+      <a href="#ep-17" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">HANDBALL</span><span class="chip-count">0</span></a>
+      <a href="#ep-15" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">DARTS</span><span class="chip-count">0</span></a>
+      <a href="#ep-16" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">FUTSAL</span><span class="chip-count">0</span></a>
+      <a href="#ep-13" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">HORSE-RACING</span><span class="chip-count">0</span></a>
+      <a href="#ep-5" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">WINTER-SPORTS</span><span class="chip-count">0</span></a>
+      <a href="#ep-2" class="sport-chip"><span class="chip-live-dot" aria-hidden="true"></span><span class="chip-label">RUGBY</span><span class="chip-count">0</span></a>
+    </div>
+    <button class="sportsbar-arrow sportsbar-arrow-right" id="sbRight" aria-label="Scroll categories right">&rsaquo;</button>
+  </nav>
+
+  <main id="main">
+
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+      <div class="container hero-inner">
+        <span class="hero-badge">
+          <span class="badge-dot" aria-hidden="true"></span>
+          Powered by cdnlivetv.is
+        </span>
+        <h1>Real-Time Sports<br>Data <span class="text-gradient">API Docs</span></h1>
+        <p class="hero-lead">
+          StreamSports99 is powered by <a href="https://cdnlivetv.is" target="_blank" rel="noopener">cdnlivetv.is</a> —
+          a real-time sports data API delivering live game schedules, streaming links, and event information
+          from leagues worldwide.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" href="https://cdnlivetv.is" target="_blank" rel="noopener">
+            Visit cdnlivetv.is
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
+          </a>
+          <a class="btn btn-outline btn-lg" href="#endpoints">Browse Free Endpoints</a>
+        </div>
+        <dl class="hero-stats">
+          <div class="stat"><dt>600+</dt><dd>Channels &amp; leagues</dd></div>
+          <div class="stat"><dt>26</dt><dd>Free endpoints</dd></div>
+          <div class="stat"><dt>2018</dt><dd>Serving data since</dd></div>
+          <div class="stat"><dt>2</dt><dd>Response formats</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- Ad row 1 -->
+    <div class="container">
+      <div class="ad-row">
+        <div class="ad-slot" role="complementary" aria-label="Advertisement"><span>Ad</span></div>
+        <div class="ad-slot" role="complementary" aria-label="Advertisement"><span>Ad</span></div>
+        <aside class="musiqly" aria-label="Sponsored: Musiqly">
+          <div class="musiqly-brand">
+            <span class="musiqly-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </span>
+            <div>
+              <p class="musiqly-name">Musiqly</p>
+              <p class="musiqly-tagline">No interruptions. Just music.</p>
+            </div>
+          </div>
+          <ul class="musiqly-features">
+            <li>Gapless playback, synced lyrics</li>
+            <li>Offline mode</li>
+            <li>100M+ songs</li>
+          </ul>
+          <button class="btn btn-white btn-sm" data-demo-ad>Try Free</button>
+        </aside>
+      </div>
+      <p class="ad-credit">Ads powered by <a href="https://cdnlivetv.is" target="_blank" rel="noopener">cdnlivetv.is</a></p>
+    </div>
+
+    <!-- ============ WHAT IS CDNLIVETV ============ -->
+    <section class="section" id="about">
+      <div class="container">
+        <div class="section-head">
+          <p class="kicker">About the platform</p>
+          <h2>What is cdnlivetv.is?</h2>
+          <p class="section-sub">A comprehensive live sports data API platform</p>
+        </div>
+        <p class="section-paragraph">
+          cdnlivetv.is is a leading platform for live sports streaming data, providing developers and businesses
+          with access to real-time sports information from over 600 channels and leagues worldwide. Since 2018,
+          it has been democratizing access to live television content through innovative and accessible
+          technology solutions.
+        </p>
+
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <h3>Free &amp; Premium API Access</h3>
+            <p>Access live sports streaming data free with ad-supported streams, or upgrade to ad-free premium for seamless integration.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </span>
+            <h3>Real-Time Updates</h3>
+            <p>Game schedules, status updates, and stream availability in real-time.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            </span>
+            <h3>Rich Media Assets</h3>
+            <p>Team logos, country flags, and tournament images.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V12"/><path d="M7.5 7.5a6.4 6.4 0 0 1 9 0"/><path d="M4 4a11 11 0 0 1 16 0"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+            </span>
+            <h3>Stream Integration</h3>
+            <p>Direct stream URLs for embedded video players.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SPORTS COVERAGE ============ -->
+    <section class="section section-alt" id="coverage">
+      <div class="container">
+        <div class="section-head">
+          <p class="kicker">Coverage</p>
+          <h2>Sports Coverage</h2>
+          <p class="section-sub">Access live data from major sports leagues and tournaments globally</p>
+        </div>
+        <ul class="coverage-grid">
+          <li><span aria-hidden="true">⚽</span>Soccer</li>
+          <li><span aria-hidden="true">🏀</span>Basketball (NBA)</li>
+          <li><span aria-hidden="true">🏒</span>Hockey (NHL)</li>
+          <li><span aria-hidden="true">🏈</span>Football (NFL)</li>
+          <li><span aria-hidden="true">⚾</span>Baseball (MLB)</li>
+          <li><span aria-hidden="true">🥊</span>UFC / MMA / WWE</li>
+          <li><span aria-hidden="true">🏏</span>Cricket</li>
+          <li><span aria-hidden="true">🎾</span>Tennis</li>
+          <li><span aria-hidden="true">⛳</span>Golf</li>
+          <li><span aria-hidden="true">🏎️</span>Motorsport</li>
+          <li><span aria-hidden="true">🚴</span>Cycling</li>
+          <li><span aria-hidden="true">🏐</span>Volleyball</li>
+          <li><span aria-hidden="true">🏸</span>Badminton</li>
+          <li><span aria-hidden="true">🤾</span>Handball</li>
+          <li><span aria-hidden="true">🎯</span>Darts</li>
+          <li><span aria-hidden="true">🥅</span>Futsal</li>
+          <li><span aria-hidden="true">🐎</span>Horse Racing</li>
+          <li><span aria-hidden="true">⛷️</span>Winter Sports</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <section class="section" id="how-it-works">
+      <div class="container">
+        <div class="section-head">
+          <p class="kicker">Integration</p>
+          <h2>How It Works</h2>
+          <p class="section-sub">Simple integration in three steps</p>
+        </div>
+        <ol class="steps-grid">
+          <li class="step-card">
+            <span class="step-number" aria-hidden="true">1</span>
+            <h3>Fetch Data</h3>
+            <p>Make API calls to cdnlivetv.is endpoints to retrieve live sports data, schedules, and event information.</p>
+          </li>
+          <li class="step-card">
+            <span class="step-number" aria-hidden="true">2</span>
+            <h3>Process &amp; Display</h3>
+            <p>Transform the API response into your application's format and display games, status, and schedules.</p>
+          </li>
+          <li class="step-card">
+            <span class="step-number" aria-hidden="true">3</span>
+            <h3>Embed Streams</h3>
+            <p>Use the provided stream URLs to embed live video players directly into your application.</p>
+            <a class="step-link" href="#player">Try the live player ↓</a>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ============ EMBED STREAMS — PLAYER DEMO ============ -->
+    <section class="section player-section" id="player">
+      <div class="container">
+        <div class="section-head">
+          <p class="kicker">Step 3 — in action</p>
+          <h2>Embed Streams <span class="text-gradient">— Player Demo</span></h2>
+          <p class="section-sub">
+            The player StreamSports99 embeds for API streams: full custom controls, adaptive HLS delivery,
+            and a buffering strategy tuned for live sport — a deep forward buffer, stall recovery, and
+            auto-reconnect with backoff.
+          </p>
+        </div>
+
+        <div class="player-layout">
+          <!-- Player -->
+          <div class="player-main">
+            <div class="player-stage" id="playerStage" data-state="idle" tabindex="0" aria-label="Stream player demo — press space to play">
+              <video id="demoVideo" class="player-video" playsinline preload="auto"></video>
+
+              <div class="player-poster" id="playerPoster">
+                <div class="poster-glow" aria-hidden="true"></div>
+                <button class="poster-play" id="posterPlay" aria-label="Play demo stream">
+                  <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+                </button>
+                <p class="poster-title" id="posterTitle">Stream Player</p>
+                <p class="poster-sub" id="posterSub">Pick a demo stream or paste an API stream URL to start</p>
+              </div>
+
+              <div class="player-spinner" id="playerSpinner" hidden>
+                <span class="spin-ring" aria-hidden="true"></span>
+                <span class="spinner-label" id="spinnerLabel">Buffering…</span>
+              </div>
+
+              <div class="player-unmute" id="unmutePill" hidden>
+                <button id="unmuteBtn" aria-label="Unmute">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M23 9l-6 6"/><path d="M17 9l6 6"/></svg>
+                  Muted — tap to unmute
+                </button>
+              </div>
+
+              <div class="player-stats" id="playerStats" hidden>
+                <div class="ps-head">
+                  <span>Playback stats</span>
+                  <button id="statsClose" aria-label="Close stats">&times;</button>
+                </div>
+                <dl class="ps-list" id="statsList"></dl>
+              </div>
+
+              <div class="player-menu" id="playerMenu" hidden aria-label="Player settings">
+                <div class="pm-group" id="qualityGroup">
+                  <p class="pm-title">Quality</p>
+                  <div class="pm-list" id="qualityList"></div>
+                </div>
+                <div class="pm-group" id="speedGroup">
+                  <p class="pm-title">Speed</p>
+                  <div class="pm-list" id="speedList"></div>
+                </div>
+              </div>
+
+              <div class="player-controls" id="playerControls">
+                <div class="pc-progress" id="pcProgress">
+                  <div class="pc-track">
+                    <div class="pc-bufs" id="pcBufs"></div>
+                    <div class="pc-played" id="pcPlayed"></div>
+                    <div class="pc-thumb" id="pcThumb"></div>
+                  </div>
+                  <input type="range" id="seekRange" min="0" max="1000" value="0" step="1" aria-label="Seek">
+                </div>
+
+                <div class="pc-row">
+                  <button class="pc-btn" id="btnPlay" aria-label="Play">
+                    <svg id="iconPlay" viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+                    <svg id="iconPause" viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true" style="display:none"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+                  </button>
+
+                  <div class="pc-volume">
+                    <button class="pc-btn" id="btnMute" aria-label="Mute">
+                      <svg id="iconVol" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg>
+                      <svg id="iconMuted" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M23 9l-6 6"/><path d="M17 9l6 6"/></svg>
+                    </button>
+                    <input type="range" id="volRange" min="0" max="100" value="100" aria-label="Volume">
+                  </div>
+
+                  <span class="pc-time" id="pcTime">0:00 / 0:00</span>
+                  <span class="pc-live" id="pcLive" hidden><span class="live-dot" aria-hidden="true"></span>LIVE</span>
+                  <button class="pc-btn pc-live-btn" id="btnGoLive" hidden>GO LIVE</button>
+                  <span class="pc-bufferpill" id="bufferPill" title="Forward buffer">—</span>
+
+                  <span class="pc-spacer"></span>
+
+                  <button class="pc-btn" id="btnSettings" aria-label="Settings" aria-haspopup="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  </button>
+                  <button class="pc-btn" id="btnStats" aria-label="Playback stats">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                  </button>
+                  <button class="pc-btn" id="btnPip" aria-label="Picture in picture">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="12" width="7" height="5" rx="1"/></svg>
+                  </button>
+                  <button class="pc-btn" id="btnFs" aria-label="Fullscreen">
+                    <svg id="iconExpand" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                    <svg id="iconCompress" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M3 21l7-7"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <p class="player-note" id="engineNote">Engine: idle</p>
+          </div>
+
+          <!-- Side panel -->
+          <aside class="player-side">
+            <div class="side-card">
+              <h3>
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Load a stream
+              </h3>
+              <div class="stream-list" id="streamList"></div>
+
+              <label class="side-label" for="streamUrl">Custom stream URL (.m3u8 / .mp4)</label>
+              <div class="url-row">
+                <input type="url" id="streamUrl" placeholder="https://api.cdnlivetv.is/…/stream.m3u8" spellcheck="false" autocomplete="off">
+                <button class="btn btn-primary btn-sm" id="loadUrlBtn">Load</button>
+              </div>
+              <p class="side-hint">Demo streams are public test feeds. Paste any stream URL returned by the free API endpoints above — free-plan streams are ad-supported.</p>
+            </div>
+
+            <div class="side-card">
+              <h3>
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22V12"/><path d="M7.5 7.5a6.4 6.4 0 0 1 9 0"/><path d="M4 4a11 11 0 0 1 16 0"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+                Buffering profile
+              </h3>
+              <div class="profile-list" id="profileList" role="radiogroup" aria-label="Buffering profile">
+                <label class="profile-opt">
+                  <input type="radio" name="bufProfile" value="smooth" checked>
+                  <span><strong>Smooth streaming</strong><small>Up to 120s forward buffer — best for live sport</small></span>
+                </label>
+                <label class="profile-opt">
+                  <input type="radio" name="bufProfile" value="balanced">
+                  <span><strong>Balanced</strong><small>~60s buffer target, lower memory use</small></span>
+                </label>
+                <label class="profile-opt">
+                  <input type="radio" name="bufProfile" value="saver">
+                  <span><strong>Data saver</strong><small>~24s buffer for constrained connections</small></span>
+                </label>
+              </div>
+              <ul class="side-facts">
+                <li>Auto-reconnect with exponential backoff on network errors</li>
+                <li>Stall watchdog nudges playback back to the live edge</li>
+                <li>Quality capped to player size to save bandwidth</li>
+                <li>Buffer health shown live in the control bar</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FREE ENDPOINTS ============ -->
+    <section class="section section-alt" id="endpoints">
+      <div class="container">
+        <div class="section-head">
+          <p class="kicker">Reference</p>
+          <h2>Free API Endpoints <span class="count-pill">26</span></h2>
+          <p class="section-sub">Start using the cdnlivetv.is API immediately with these free endpoints</p>
+        </div>
+        <p class="section-paragraph">
+          Below is a list of all free APIs available for CDN Live TV clients. Click any link to access the data directly:
+        </p>
+
+        <div class="endpoint-toolbar">
+          <div class="filter-box">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="search" id="endpointFilter" placeholder="Filter endpoints… (press /)" autocomplete="off" spellcheck="false" aria-label="Filter endpoints">
+            <button class="filter-clear" id="filterClear" aria-label="Clear filter">&times;</button>
+          </div>
+          <p class="filter-count" id="filterCount" aria-live="polite">Showing all 26 endpoints</p>
+        </div>
+
+        <div class="endpoint-grid" id="endpointGrid">
+          <!-- Endpoint cards rendered by js/main.js -->
+        </div>
+        <div class="endpoint-empty" id="endpointEmpty" hidden>
+          <p>No endpoints match your filter.</p>
+        </div>
+
+        <aside class="callout callout-note">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <p><strong>Note:</strong> Free API access includes ad-supported streams. For ad-free integration, upgrade to premium by visiting <a href="https://cdnlivetv.is" target="_blank" rel="noopener">cdnlivetv.is</a></p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Ad row 2 -->
+    <div class="container">
+      <div class="ad-row">
+        <div class="ad-slot" role="complementary" aria-label="Advertisement"><span>Ad</span></div>
+        <div class="ad-slot" role="complementary" aria-label="Advertisement"><span>Ad</span></div>
+        <aside class="musiqly" aria-label="Sponsored: Musiqly">
+          <div class="musiqly-brand">
+            <span class="musiqly-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </span>
+            <div>
+              <p class="musiqly-name">Musiqly</p>
+              <p class="musiqly-tagline">No interruptions. Just music.</p>
+            </div>
+          </div>
+          <ul class="musiqly-features">
+            <li>Gapless playback, synced lyrics</li>
+            <li>Offline mode</li>
+            <li>100M+ songs</li>
+          </ul>
+          <button class="btn btn-white btn-sm" data-demo-ad>Try Free</button>
+        </aside>
+      </div>
+      <p class="ad-credit">Ads powered by <a href="https://cdnlivetv.is" target="_blank" rel="noopener">cdnlivetv.is</a></p>
+    </div>
+
+    <!-- ============ RESPONSE FORMATS ============ -->
+    <section class="section" id="formats">
+      <div class="container">
+        <div class="section-head">
+          <p class="kicker">Reference</p>
+          <h2>API Response Formats</h2>
+          <p class="section-sub">The API returns two different JSON formats depending on the sport. All other fields are identical — the only difference is how the event participants are represented.</p>
+        </div>
+
+        <div class="keydiff-card">
+          <h3>Key Differences</h3>
+          <ul class="keydiff-list">
+            <li>
+              <span class="kd-badge kd-team">Team vs Team</span>
+              format uses <code>homeTeam</code>, <code>awayTeam</code>, <code>homeTeamIMG</code>, <code>awayTeamIMG</code>
+            </li>
+            <li>
+              <span class="kd-badge kd-event">Event-Based</span>
+              format uses <code>event</code> and <code>eventIMG</code> instead (no team fields)
+            </li>
+            <li>
+              <span class="kd-badge kd-shared">Shared</span>
+              all other fields (<code>gameID</code>, <code>time</code>, <code>tournament</code>, <code>country</code>, <code>status</code>, <code>start</code>, <code>end</code>, <code>channels</code>) are identical in both formats
+            </li>
+          </ul>
+        </div>
+
+        <div class="format-table-wrap">
+          <table class="format-table">
+            <thead>
+              <tr><th>Format</th><th>Sports</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="kd-badge kd-team">Team vs Team</span></td>
+                <td class="sport-pills">
+                  <span>Soccer</span><span>NBA</span><span>NFL</span><span>NHL</span><span>MLB</span><span>NCAA</span><span>NCAAW</span><span>Basketball</span><span>Hockey</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="kd-badge kd-event">Event-Based</span></td>
+                <td class="sport-pills">
+                  <span>Tennis</span><span>Golf</span><span>Motorsport</span><span>UFC</span><span>WWE</span><span>MMA</span><span>Cricket</span><span>Cycling</span><span>Volleyball</span><span>Badminton</span><span>Handball</span><span>Darts</span><span>Futsal</span><span>Horse Racing</span><span>Winter Sports</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="code-grid">
+          <div class="code-panel">
+            <div class="code-panel-head">
+              <span class="code-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="code-title">Format A — Team vs Team</span>
+              <button class="btn-copy" data-copy-target="jsonA" aria-label="Copy JSON example">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy
+              </button>
+            </div>
+            <p class="code-caption">Used by Soccer, NBA, NFL, NHL, MLB, NCAA, NCAAW, Basketball, Hockey</p>
+            <pre class="code-body" id="jsonA" tabindex="0"><code></code></pre>
+          </div>
+
+          <div class="code-panel">
+            <div class="code-panel-head">
+              <span class="code-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="code-title">Format B — Event-Based</span>
+              <button class="btn-copy" data-copy-target="jsonB" aria-label="Copy JSON example">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy
+              </button>
+            </div>
+            <p class="code-caption">Used by Tennis, Golf, Motorsport, UFC, WWE, MMA, Cricket, Cycling, and more</p>
+            <pre class="code-body" id="jsonB" tabindex="0"><code></code></pre>
+          </div>
+        </div>
+
+        <aside class="callout callout-note">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <p><strong>Note:</strong> Event-based responses have no <code>homeTeam</code>, <code>awayTeam</code>, <code>homeTeamIMG</code>, or <code>awayTeamIMG</code> fields. Instead, the event name and image are in <code>event</code> and <code>eventIMG</code>.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ BUILD SOMETHING SIMILAR ============ -->
+    <section class="section" id="build">
+      <div class="container">
+        <div class="cta-banner">
+          <h2>Want to Build Something Similar?</h2>
+          <p>cdnlivetv.is powers this site. Check out their documentation and API to build your own sports streaming application.</p>
+          <a class="btn btn-primary btn-lg" href="https://cdnlivetv.is" target="_blank" rel="noopener">
+            Visit cdnlivetv.is
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SUPPORT ============ -->
+    <section class="section section-alt" id="support">
+      <div class="container container-narrow">
+        <div class="section-head">
+          <p class="kicker">Contact</p>
+          <h2>Need Help or Support?</h2>
+          <p class="section-sub">For technical support, API access inquiries, partnership opportunities, or any questions about cdnlivetv.is, please reach out:</p>
+        </div>
+        <div class="support-card">
+          <span class="support-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>
+          </span>
+          <a class="support-email" href="mailto:cdn-live-tv@proton.me">cdn-live-tv@proton.me</a>
+          <div class="support-actions">
+            <button class="btn btn-outline btn-sm" data-copy="cdn-live-tv@proton.me">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy address
+            </button>
+            <a class="btn btn-primary btn-sm" href="mailto:cdn-live-tv@proton.me">Send email</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ad row 3 -->
+    <div class="container">
+      <div class="ad-row">
+        <div class="ad-slot" role="complementary" aria-label="Advertisement"><span>Ad</span></div>
+        <div class="ad-slot" role="complementary" aria-label="Advertisement"><span>Ad</span></div>
+        <aside class="musiqly" aria-label="Sponsored: Musiqly">
+          <div class="musiqly-brand">
+            <span class="musiqly-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </span>
+            <div>
+              <p class="musiqly-name">Musiqly</p>
+              <p class="musiqly-tagline">No interruptions. Just music.</p>
+            </div>
+          </div>
+          <ul class="musiqly-features">
+            <li>Gapless playback, synced lyrics</li>
+            <li>Offline mode</li>
+            <li>100M+ songs</li>
+          </ul>
+          <button class="btn btn-white btn-sm" data-demo-ad>Try Free</button>
+        </aside>
+      </div>
+      <p class="ad-credit">Ads powered by <a href="https://cdnlivetv.is" target="_blank" rel="noopener">cdnlivetv.is</a></p>
+    </div>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="#top" aria-label="StreamSports99 home">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 40 40" width="30" height="30"><rect width="40" height="40" rx="10" fill="url(#bg-mark)"/><path d="M16 12l13 8-13 8z" fill="#fff"/></svg>
+            </span>
+            <span class="brand-name">STREAMSPORTS<b>99</b></span>
+          </a>
+          <p class="footer-tagline">
+            Free Live Sports (API). No advertisements. No registration. Just click &amp; play.
+            Watch HD sports events from around the world. Stay connected.
+          </p>
+        </div>
+
+        <nav class="footer-col" aria-label="Home">
+          <h3>Home</h3>
+          <a href="#" data-page="Home">Home</a>
+          <a href="#" data-page="Schedule">Schedule</a>
+          <a href="#" data-page="Sports News">Sports News</a>
+          <a href="#ep-1">News TV <span class="fcount hot">24</span></a>
+          <a href="#ep-1">Live TV <span class="fcount hot">414</span></a>
+          <a href="#main" aria-current="page">API Docs</a>
+          <a href="#" data-page="VPN/Block Guide">VPN/Block Guide</a>
+          <a href="#" data-page="Install App">Install App</a>
+          <a href="#" data-page="Mirror Domains">Mirror Domains</a>
+          <a href="#" data-page="Updates">Updates</a>
+        </nav>
+
+        <nav class="footer-col" aria-label="Sports">
+          <h3>Sports</h3>
+          <a href="#" data-page="Live Scoreboard">Live Scoreboard <span class="fcount hot">5</span></a>
+          <a href="#ep-20">Football <span class="fcount">0</span></a>
+          <a href="#ep-21">Basketball <span class="fcount">0</span></a>
+          <a href="#ep-22">Hockey <span class="fcount">0</span></a>
+          <a href="#ep-23">Baseball <span class="fcount hot">4</span></a>
+          <a href="#ep-3">Soccer <span class="fcount">0</span></a>
+          <a href="#ep-24">Fight <span class="fcount">0</span></a>
+          <a href="#ep-4">Cricket <span class="fcount">0</span></a>
+          <a href="#ep-9">Tennis <span class="fcount">0</span></a>
+          <a href="#ep-6">Golf <span class="fcount">0</span></a>
+        </nav>
+
+        <nav class="footer-col" aria-label="More sports">
+          <h3>More Sports</h3>
+          <a href="#ep-19">Motorsport <span class="fcount">0</span></a>
+          <a href="#ep-11">Cycling <span class="fcount">0</span></a>
+          <a href="#ep-10">Volleyball <span class="fcount">0</span></a>
+          <a href="#ep-12">Badminton <span class="fcount">0</span></a>
+          <a href="#ep-17">Handball <span class="fcount">0</span></a>
+          <a href="#ep-15">Darts <span class="fcount">0</span></a>
+          <a href="#ep-16">Futsal <span class="fcount">0</span></a>
+          <a href="#ep-13">Horse Racing <span class="fcount">0</span></a>
+          <a href="#ep-5">Winter Sports <span class="fcount">0</span></a>
+          <a href="#ep-2">Rugby <span class="fcount">0</span></a>
+        </nav>
+
+        <nav class="footer-col" aria-label="Premium">
+          <h3>Premium</h3>
+          <a href="#" data-page="Multistream Pro">Multistream Pro</a>
+          <a href="#" data-page="Sign In">Sign in</a>
+          <a href="#" data-page="Register">Register</a>
+          <a href="#" data-page="IPTV">IPTV</a>
+        </nav>
+      </div>
+
+      <div class="footer-disclaimer">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <p>We do not host, upload, or store any content. All media and information are sourced &amp; aggregated from publicly accessible online sources.</p>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; <span id="year">2026</span> StreamSports99 — Free Live Sports (API). No advertisements. No registration.</p>
+        <button class="kbd-link" id="shortcutsOpen">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01"/><path d="M10 10h.01"/><path d="M14 10h.01"/><path d="M18 10h.01"/><path d="M6 14h.01"/><path d="M18 14h.01"/><path d="M8 14h8"/></svg>
+          Keyboard shortcuts
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Back to top -->
+  <button class="back-to-top" id="backToTop" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+  </button>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Keyboard shortcuts modal -->
+  <div class="modal-overlay" id="shortcutsModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
+      <div class="modal-head">
+        <h2 id="shortcutsTitle">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01"/><path d="M10 10h.01"/><path d="M14 10h.01"/><path d="M18 10h.01"/><path d="M6 14h.01"/><path d="M18 14h.01"/><path d="M8 14h8"/></svg>
+          Keyboard shortcuts
+        </h2>
+        <button class="modal-close" id="shortcutsClose" aria-label="Close dialog">&times;</button>
+      </div>
+      <ul class="shortcut-list">
+        <li><span>Filter endpoints</span><span class="kbd-combo"><kbd>/</kbd></span></li>
+        <li><span>Toggle this dialog</span><span class="kbd-combo"><kbd>?</kbd></span></li>
+        <li><span>Close dialog / clear filter</span><span class="kbd-combo"><kbd>Esc</kbd></span></li>
+        <li><span>Back to top</span><span class="kbd-combo"><kbd>T</kbd></span></li>
+        <li><span>Jump to endpoints</span><span class="kbd-combo"><kbd>E</kbd></span></li>
+        <li><span>Jump to response formats</span><span class="kbd-combo"><kbd>F</kbd></span></li>
+        <li><span>Jump to support</span><span class="kbd-combo"><kbd>C</kbd></span></li>
+        <li><span>Jump to player demo</span><span class="kbd-combo"><kbd>P</kbd></span></li>
+        <li><span>Bookmark this site</span><span class="kbd-combo"><kbd>Ctrl</kbd>+<kbd>D</kbd></span></li>
+      </ul>
+      <p class="modal-foot">When the player is focused: <kbd>Space</kbd> play/pause · <kbd>←</kbd>/<kbd>→</kbd> seek 10s · <kbd>↑</kbd>/<kbd>↓</kbd> volume · <kbd>M</kbd> mute · <kbd>F</kbd> fullscreen · <kbd>I</kbd> stats</p>
+    </div>
+  </div>
+
+  <script src="js/vendor/hls.min.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/player.js"></script>
+</body>
+</html>
