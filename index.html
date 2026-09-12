@@ -366,6 +366,17 @@
                 <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 Load a stream
               </h3>
+              <!-- Live API channels (pulled at runtime) -->
+              <div class="api-channels-head">
+                <span class="side-label" style="margin-bottom:6px;display:flex;align-items:center;gap:8px">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>
+                  Live channels — from API
+                  <button class="link-btn" id="apiRefresh" title="Refresh channels from API" aria-label="Refresh API channels" style="margin-left:auto;font-size:12px">↻ Refresh</button>
+                </span>
+                <p class="api-status" id="apiStatus" aria-live="polite">Loading channels from API…</p>
+              </div>
+              <div class="stream-list api-stream-list" id="apiStreamList" aria-label="Live API channels"></div>
+              <div class="stream-divider" aria-hidden="true"><span>Demo &amp; fallback</span></div>
               <div class="stream-list" id="streamList"></div>
 
               <label class="side-label" for="streamUrl">Custom stream URL (.m3u8 / .mp4)</label>
@@ -373,7 +384,29 @@
                 <input type="url" id="streamUrl" placeholder="https://api.cdnlivetv.is/…/stream.m3u8" spellcheck="false" autocomplete="off">
                 <button class="btn btn-primary btn-sm" id="loadUrlBtn">Load</button>
               </div>
-              <p class="side-hint">Demo streams are public test feeds. Paste any stream URL returned by the free API endpoints above — free-plan streams are ad-supported.</p>
+              <p class="side-hint">Demo streams are public test feeds. Paste any stream URL returned by the free API endpoints above — free-plan streams are ad-supported. Click any channel above to <strong>click-to-play</strong> instantly.</p>
+            </div>
+
+            <div class="side-card embed-card">
+              <h3>
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M10 8l-4 4 4 4"/><path d="M14 8l4 4-4 4"/></svg>
+                Embed this player
+              </h3>
+              <p class="side-hint">Copy this iframe to embed the current stream on your site. Supports <code>?stream=URL</code> and <code>?autoplay=1</code>. Use <code>postMessage({type:'ss99:load',url})</code> to control the iframe from the parent page.</p>
+              <label class="side-label" for="embedCode">Iframe embed code</label>
+              <div class="embed-row">
+                <textarea id="embedCode" class="embed-code" readonly rows="3" spellcheck="false" aria-label="Iframe embed code"></textarea>
+              </div>
+              <div class="embed-actions">
+                <label class="embed-opt"><input type="checkbox" id="embedAutoplay"> Autoplay (muted) in embed</label>
+                <span style="flex:1"></span>
+                <button class="btn btn-outline btn-sm" id="embedPreviewBtn" title="Open embed preview in new tab">Preview</button>
+                <button class="btn btn-primary btn-sm" id="copyEmbedBtn">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  Copy iframe
+                </button>
+              </div>
+              <p class="side-hint" style="margin-top:8px">Tip: add <code>?embed=1</code> to this page URL for a chromeless player — ideal for <code>&lt;iframe&gt;</code>. Example: <code id="embedExample">?embed=1&amp;stream=…&amp;autoplay=1#player</code></p>
             </div>
 
             <div class="side-card">

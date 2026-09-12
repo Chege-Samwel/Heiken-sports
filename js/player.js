@@ -2,6 +2,7 @@
    StreamSports99 — Stream Player Demo
    Custom controls + buffering strategy for API stream playback.
    HLS via vendored hls.js (MSE) with native HLS/MP4 fallback.
+   Added: API channel pull, iframe embed support, click-to-play polish.
    ========================================================================== */
 (function () {
   "use strict";
@@ -62,12 +63,42 @@
   var unmutePill  = $("#unmutePill");
   var unmuteBtn   = $("#unmuteBtn");
 
+  // New UI elements (may be absent before embed patch — guard all uses)
+  var apiList     = $("#apiStreamList");
+  var apiStatus   = $("#apiStatus");
+  var apiRefresh  = $("#apiRefresh");
+  var embedCodeEl = $("#embedCode");
+  var copyEmbedBtn= $("#copyEmbedBtn");
+  var embedAutoplay = $("#embedAutoplay");
+  var embedPreviewBtn = $("#embedPreviewBtn");
+
   var HlsRef     = typeof Hls !== "undefined" ? Hls : null;
   var MSE_OK     = !!(HlsRef && HlsRef.isSupported && HlsRef.isSupported());
   var NATIVE_HLS = !!(video.canPlayType && video.canPlayType("application/vnd.apple.mpegurl"));
 
   /* ------------------------------------------------------------------
-   * Demo streams (public test feeds)
+   * URL query helpers — embed / autoplay / stream params
+   * ------------------------------------------------------------------ */
+  function qsParam(name) {
+    try {
+      var sp = new URLSearchParams(window.location.search);
+      return sp.get(name);
+    } catch (e) { return null; }
+  }
+  var EMBED_MODE = (function () {
+    var v = qsParam("embed");
+    return v === "1" || v === "true" || v === "player" || v === "yes" || qsParam("embedMode")==="1";
+  })();
+  var EMBED_STREAM = qsParam("stream") || qsParam("src") || qsParam("url") || qsParam("channel");
+  var QS_AUTOPLAY = qsParam("autoplay");
+  var QS_MUTED = qsParam("muted");
+  var QS_CHANNEL = qsParam("channel") || qsParam("channel_code");
+
+  // If any iframe param present, we also consider embed-like behaviour for autoplay
+  var IS_IFRAMED = (function(){ try { return window.self !== window.top; } catch(e){ return false; } })();
+
+  /* ------------------------------------------------------------------
+   * Demo streams (public test feeds) — fallback when API unavailable
    * ------------------------------------------------------------------ */
   var DEMO_STREAMS = [
     { name: "Mux Test Stream",  meta: "VOD · multi-bitrate HLS",     url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", kind: "hls", live: false },
@@ -76,6 +107,199 @@
     { name: "Apple LL-HLS",     meta: "LIVE · low-latency HLS",      url: "https://ll-hls-test-apple.akamaized.net/llhls1/multi.m3u8", kind: "hls", live: true },
     { name: "Akamai Live Test", meta: "LIVE · 24/7 HLS",             url: "https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8", kind: "hls", live: true }
   ];
+
+  /* ------------------------------------------------------------------
+   * API channels — pulled from cdnlivetv.is at runtime
+   * ------------------------------------------------------------------ */
+  var API_BASE = "https://api.cdnlivetv.is/api/v1/";
+  var API_QUERY = "?user=cdnlivetv&plan=free";
+  var API_CHANNELS = []; // {name, meta, url, kind, live, image, channel_code}
+  var API_STATUS = "idle"; // idle|loading|ok|empty|error
+  var ALL_STREAMS = DEMO_STREAMS.slice(); // merged list (API first, then demo)
+
+  function apiUrl(path) { return API_BASE + path + API_QUERY; }
+
+  function normalizeApiItem(raw) {
+    // Handles several shapes:
+    //  - channel object: {channel_name, channel_code, image, streams: [{stream_url}]}
+    //  - event object with homeTeam/awayTeam + channels[]
+    //  - event object with event/eventIMG + channels[]
+    //  - flat channel with url/stream_url
+    try {
+      // If it's an event with channels array, pick its first playable stream
+      if (raw && raw.channels && Array.isArray(raw.channels) && raw.channels.length) {
+        var ch = raw.channels[0];
+        var streamUrl = ch.stream_url || ch.url || ch.link || ch.href || ch.src || "";
+        // Some channel entries use image field for playable HLS url (rare) — guard
+        if (!streamUrl && ch.image && /\.m3u8/i.test(ch.image)) streamUrl = ch.image;
+        if (!streamUrl) {
+          // Try nested streams
+          if (ch.streams && ch.streams[0]) streamUrl = ch.streams[0].stream_url || ch.streams[0].url || "";
+        }
+        if (!streamUrl) return null;
+        var evName = raw.homeTeam ? (raw.homeTeam + " vs " + raw.awayTeam)
+                   : raw.event ? raw.event
+                   : (raw.tournament ? raw.tournament : (ch.channel_name || ch.name || "Live event"));
+        var meta = raw.tournament ? (raw.tournament + " · LIVE") : (ch.channel_name ? ch.channel_name + " · LIVE" : "LIVE · HLS");
+        var kind = /\.m3u8/i.test(streamUrl) ? "hls" : /\.mp4/i.test(streamUrl) ? "mp4" : "hls";
+        return { name: evName, meta: meta, url: streamUrl, kind: kind, live: true, image: ch.image || raw.homeTeamIMG || raw.eventIMG || "", channel_code: ch.channel_code || "" };
+      }
+      // Flat channel
+      var name = raw.channel_name || raw.name || raw.title || raw.channel || "Channel";
+      var code = raw.channel_code || raw.code || raw.id || "";
+      var image = raw.image || raw.logo || raw.img || "";
+      var url = raw.stream_url || raw.url || raw.link || raw.href || raw.src || "";
+      if (!url && raw.streams && raw.streams[0]) url = raw.streams[0].stream_url || raw.streams[0].url || "";
+      if (!url) return null;
+      var isHls = /\.m3u8(\?|#|$)/i.test(url);
+      var isMp4 = /\.mp4(\?|#|$)/i.test(url);
+      var k = isHls ? "hls" : isMp4 ? "mp4" : "hls";
+      return { name: name, meta: (code ? code + " · " : "") + (k === "hls" ? "LIVE · HLS" : "LIVE · MP4"), url: url, kind: k, live: true, image: image, channel_code: code };
+    } catch (e) { return null; }
+  }
+
+  function extractChannelsFromJson(json) {
+    var out = [];
+    if (!json) return out;
+    // Unwrap common envelopes: {data: [...]}, {channels: [...]}, {events: [...]}, {result: [...]}
+    var arr = null;
+    if (Array.isArray(json)) arr = json;
+    else if (Array.isArray(json.data)) arr = json.data;
+    else if (Array.isArray(json.channels)) arr = json.channels;
+    else if (Array.isArray(json.events)) arr = json.events;
+    else if (Array.isArray(json.result)) arr = json.result;
+    else if (json.data && Array.isArray(json.data.channels)) arr = json.data.channels;
+    else if (json.data && Array.isArray(json.data.events)) arr = json.data.events;
+    else {
+      // Single object that itself contains channels
+      if (json.channels || json.homeTeam || json.event) arr = [json];
+      else {
+        // Try to find first array value in object
+        for (var k in json) if (json.hasOwnProperty(k) && Array.isArray(json[k])) { arr = json[k]; break; }
+      }
+    }
+    if (!arr) return out;
+    for (var i = 0; i < arr.length; i++) {
+      var n = normalizeApiItem(arr[i]);
+      if (n && n.url) out.push(n);
+      // If raw item is an event with many channels, also expand all channels not just first
+      if (arr[i] && arr[i].channels && arr[i].channels.length > 1) {
+        for (var c = 1; c < arr[i].channels.length; c++) {
+          var ch2 = arr[i].channels[c];
+          var u2 = ch2.stream_url || ch2.url || "";
+          if (u2) {
+            var evName2 = arr[i].homeTeam ? (arr[i].homeTeam + " vs " + arr[i].awayTeam) : (arr[i].event || ch2.channel_name || "Channel");
+            out.push({ name: evName2 + " ("+ (ch2.channel_name||"ch "+(c+1)) +")", meta: (ch2.channel_name||"LIVE") + " · HLS", url: u2, kind: /\.m3u8/i.test(u2)?"hls":"mp4", live: true, image: ch2.image||"", channel_code: ch2.channel_code||"" });
+          }
+        }
+      }
+      if (out.length >= 30) break; // cap
+    }
+    return out;
+  }
+
+  function fetchWithTimeout(url, ms) {
+    ms = ms || 7000;
+    return new Promise(function (resolve, reject) {
+      var timer = setTimeout(function () { reject(new Error("timeout")); }, ms);
+      fetch(url, { mode: "cors", cache: "no-store" }).then(function (r) {
+        clearTimeout(timer);
+        if (!r.ok) reject(new Error("http "+r.status));
+        else r.json().then(resolve).catch(reject);
+      }).catch(function (e) { clearTimeout(timer); reject(e); });
+    });
+  }
+
+  function fetchApiChannels() {
+    if (!apiList) {
+      // If new UI not present (old index.html), still fetch to populate streamList merge
+      apiStatus = null;
+    }
+    API_STATUS = "loading";
+    if (apiStatus) apiStatus.textContent = "Loading channels from API…";
+    if (apiList) apiList.innerHTML = '<div class="api-loading"><span class="spin-ring" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle"></span> Fetching cdnlivetv.is…</div>';
+    // Try channels first, then a more general sports events endpoint
+    var endpoints = [
+      apiUrl("channels/"),
+      apiUrl("events/sports/"),
+      apiUrl("events/sports/soccer/")
+    ];
+    var attempt = 0;
+    function tryNext(lastErr) {
+      if (attempt >= endpoints.length) {
+        API_STATUS = "error";
+        var msg = "API unreachable — showing demo streams. Paste any stream URL from the endpoints above.";
+        if (apiStatus) apiStatus.textContent = msg;
+        if (apiList) apiList.innerHTML = '<div class="api-empty">Couldn’t reach the API (' + escapeHtml(String(lastErr||"network")) + '). Demo streams are available below.</div>';
+        // Keep demo streams
+        ALL_STREAMS = DEMO_STREAMS.slice();
+        renderStreamList();
+        renderApiList(); // will show empty state
+        return;
+      }
+      var url = endpoints[attempt++];
+      if (apiStatus) apiStatus.textContent = "Loading from " + url.replace(API_BASE,"") + "…";
+      fetchWithTimeout(url, 7000).then(function (json) {
+        var channels = extractChannelsFromJson(json);
+        if (!channels.length) {
+          // Try next endpoint
+          tryNext("empty");
+          return;
+        }
+        API_CHANNELS = channels;
+        API_STATUS = "ok";
+        if (apiStatus) apiStatus.textContent = "Loaded " + channels.length + " live channels from API";
+        // Merge: API channels first, then demo (dedup by url)
+        var seen = {};
+        var merged = [];
+        for (var i=0;i<channels.length;i++){ var u=channels[i].url; if(!seen[u]){seen[u]=1; merged.push(channels[i]);}}
+        for (var j=0;j<DEMO_STREAMS.length;j++){ var du=DEMO_STREAMS[j].url; if(!seen[du]){ seen[du]=1; merged.push(DEMO_STREAMS[j]);}}
+        ALL_STREAMS = merged;
+        renderStreamList();
+        renderApiList();
+        // If user passed ?channel= code, auto-select that channel
+        if (QS_CHANNEL) {
+          for (var k=0;k<API_CHANNELS.length;k++){
+            if (API_CHANNELS[k].channel_code && API_CHANNELS[k].channel_code.toLowerCase()===QS_CHANNEL.toLowerCase()) {
+              selectStreamByUrl(API_CHANNELS[k].url, API_CHANNELS[k].kind, API_CHANNELS[k].name);
+              break;
+            }
+          }
+        }
+      }).catch(function (err) {
+        tryNext(err && err.message ? err.message : err);
+      });
+    }
+    tryNext();
+  }
+
+  function renderApiList() {
+    if (!apiList) return;
+    if (!API_CHANNELS.length) {
+      if (API_STATUS === "loading") {
+        apiList.innerHTML = '<div class="api-loading">Loading…</div>';
+      } else if (API_STATUS === "error") {
+        // already set above
+      } else {
+        apiList.innerHTML = '<div class="api-empty">No API channels yet — try <button class="link-btn" id="apiRetryInline">retry</button> or use demo streams.</div>';
+        var retryInline = $("#apiRetryInline");
+        if (retryInline) retryInline.addEventListener("click", fetchApiChannels);
+      }
+      return;
+    }
+    var html = "";
+    for (var i = 0; i < API_CHANNELS.length; i++) {
+      var c = API_CHANNELS[i];
+      var idx = -1;
+      // find index in ALL_STREAMS
+      for (var j=0;j<ALL_STREAMS.length;j++) if (ALL_STREAMS[j].url===c.url) { idx=j; break; }
+      html += '<button class="stream-item api-item' + (ALL_STREAMS[idx] && S.url===ALL_STREAMS[idx].url ? ' active' : '') + '" data-api-i="'+i+'" data-all-i="'+idx+'" title="'+escapeHtml(c.url)+'">'
+            + '<span class="si-main"><strong>' + escapeHtml(c.name) + '</strong><small>' + escapeHtml(c.meta) + '</small></span>'
+            + '<span class="si-badge si-live">LIVE</span>'
+            + '</button>';
+    }
+    apiList.innerHTML = html;
+  }
 
   var PROFILES = {
     smooth:   { label: "Smooth · 120s buffer", maxBufferLength: 120, maxMaxBufferLength: 300, backBufferLength: 90 },
@@ -170,6 +394,86 @@
   }
 
   /* ------------------------------------------------------------------
+   * Embed helpers
+   * ------------------------------------------------------------------ */
+  function applyEmbedMode() {
+    if (!EMBED_MODE && !IS_IFRAMED) return;
+    // In embed mode we add a class so CSS can hide chrome
+    if (EMBED_MODE) document.documentElement.classList.add("embed-mode");
+    if (IS_IFRAMED) document.documentElement.classList.add("is-iframed");
+    // Try to hide surrounding UI when embed param set
+    if (EMBED_MODE) {
+      // Hide announce, header, sportsbar, hero etc. — CSS handles most,
+      // but ensure player is scrolled into view
+      try {
+        var el = $("#player");
+        if (el) setTimeout(function(){ el.scrollIntoView({block:"start"}); }, 50);
+      } catch(e){}
+    }
+  }
+
+  function buildEmbedUrl(streamUrl) {
+    var base = window.location.origin + window.location.pathname;
+    var u = streamUrl || S.url || (ALL_STREAMS[0] && ALL_STREAMS[0].url) || "";
+    var params = "embed=1&stream=" + encodeURIComponent(u);
+    if (embedAutoplay && embedAutoplay.checked) params += "&autoplay=1";
+    else if (QS_AUTOPLAY==="1" || IS_IFRAMED) params += "&autoplay=1";
+    return base + "?" + params + "#player";
+  }
+
+  function buildEmbedCode() {
+    var src = buildEmbedUrl(S.url);
+    var title = escapeHtml(S.name || "StreamSports99 Player");
+    return '<iframe src="' + escapeHtml(src) + '" width="960" height="540" frameborder="0" allowfullscreen allow="autoplay; fullscreen; picture-in-picture" title="' + title + '" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+  }
+
+  function updateEmbedCode() {
+    if (!embedCodeEl) return;
+    var code = buildEmbedCode();
+    // textarea should show decoded entities for easy copy
+    embedCodeEl.value = code.replace(/&amp;/g, "&");
+    // Also update a live preview link if present
+    if (embedPreviewBtn) {
+      embedPreviewBtn.setAttribute("data-embed-src", buildEmbedUrl(S.url));
+    }
+  }
+
+  function copyEmbedCode() {
+    if (!embedCodeEl) return;
+    var val = embedCodeEl.value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(val).then(function(){ toastP("Embed code copied"); }).catch(function(){ fallbackCopy(val); });
+    } else fallbackCopy(val);
+  }
+  function fallbackCopy(val){
+    try {
+      embedCodeEl.focus(); embedCodeEl.select();
+      document.execCommand("copy");
+      toastP("Embed code copied");
+    } catch(e){ toastP("Copy failed — select and copy manually"); }
+  }
+
+  /* PostMessage API for parent pages to control the iframe */
+  window.addEventListener("message", function (e) {
+    var d = e.data;
+    if (!d || typeof d !== "object") return;
+    if (d.type === "ss99:load" && d.url) {
+      var k = /\.m3u8/i.test(d.url) ? "hls" : /\.mp4/i.test(d.url) ? "mp4" : "hls";
+      var n = d.name || "Embedded stream";
+      loadStream(d.url, k, n);
+      if (d.autoplay !== false) playWithFallback();
+    } else if (d.type === "ss99:play") {
+      playWithFallback();
+    } else if (d.type === "ss99:pause") {
+      video.pause();
+    } else if (d.type === "ss99:seek" && typeof d.time === "number") {
+      video.currentTime = d.time;
+    } else if (d.type === "ss99:volume" && typeof d.volume === "number") {
+      setVolume(d.volume);
+    }
+  });
+
+  /* ------------------------------------------------------------------
    * Engine lifecycle
    * ------------------------------------------------------------------ */
   function destroyEngine() {
@@ -197,10 +501,28 @@
     poster.hidden = true;
     showSpinner("Loading stream…");
     closeMenu();
+    updateEmbedCode();
+    // Reflect in URL without reloading (helps sharing/embed)
+    try {
+      var sp = new URLSearchParams(window.location.search);
+      // Only update stream param if not in embed mode to avoid history spam? Keep it.
+      if (url && !EMBED_MODE) {
+        // keep other params, just set stream for deep-linking
+        // Don't pushState too aggressively — replaceState
+        sp.set("stream", url);
+        var newQs = sp.toString() ? "?" + sp.toString() : "";
+        history.replaceState(null, "", window.location.pathname + newQs + window.location.hash);
+      }
+    } catch(e){}
+
+    // Notify parent if iframed
+    try {
+      if (IS_IFRAMED) parent.postMessage({type:"ss99:loading", url:url, name:name}, "*");
+    } catch(e){}
 
     if (kind === "hls") {
       if (MSE_OK) {
-        attachHls(url);                 /* playback starts on MANIFEST_PARSED */
+        attachHls(url);
       } else if (NATIVE_HLS) {
         attachNative(url, "native HLS");
         playWithFallback();
@@ -214,18 +536,36 @@
     }
   }
 
+  function selectStreamByUrl(url, kind, name){
+    // highlight matching item in both lists, then load
+    $all(".stream-item").forEach(function(b){ b.classList.remove("active"); });
+    // try to find matching all-index
+    for (var i=0;i<ALL_STREAMS.length;i++) if(ALL_STREAMS[i].url===url){ 
+      var el = streamList.querySelector('[data-i="'+i+'"]');
+      if(el) el.classList.add("active");
+      var apiIdx = -1;
+      for(var j=0;j<API_CHANNELS.length;j++) if(API_CHANNELS[j].url===url){ apiIdx=j; break; }
+      if(apiIdx>=0){
+        var apiEl = apiList && apiList.querySelector('[data-api-i="'+apiIdx+'"]');
+        if(apiEl) apiEl.classList.add("active");
+      }
+      break;
+    }
+    loadStream(url, kind || "hls", name);
+  }
+
   function attachHls(url) {
     var p = PROFILES[profile];
     var cfg = {
       enableWorker: true,
-      lowLatencyMode: false,          /* favour throughput & stability over latency */
+      lowLatencyMode: false,
       maxBufferLength: p.maxBufferLength,
       maxMaxBufferLength: p.maxMaxBufferLength,
       maxBufferSize: 120 * 1000 * 1000,
       backBufferLength: p.backBufferLength,
-      liveSyncDurationCount: 3,       /* sit ~3 segments behind the live edge */
+      liveSyncDurationCount: 3,
       liveDurationInfinity: true,
-      startLevel: -1,                 /* let ABR pick the start level */
+      startLevel: -1,
       abrEwmaDefaultEstimate: 1500000,
       capLevelToPlayerSize: true,
       startFragPrefetch: true,
@@ -307,13 +647,13 @@
     setState("error");
     posterTitle.textContent = "Playback error";
     posterSub.textContent = msg;
+    try { if(IS_IFRAMED) parent.postMessage({type:"ss99:error", message:msg}, "*"); } catch(e){}
   }
 
   function playWithFallback() {
     var p = video.play();
     if (p && p.catch) {
       p.catch(function () {
-        /* Autoplay blocked — retry muted, offer unmute pill */
         video.muted = true;
         syncVolUI();
         var p2 = video.play();
@@ -338,6 +678,7 @@
     hideSpinner();
     startTicker();
     showControls();
+    try { if(IS_IFRAMED) parent.postMessage({type:"ss99:playing", url:S.url}, "*"); } catch(e){}
   });
   video.addEventListener("canplay", hideSpinner);
   video.addEventListener("waiting", function () { showSpinner("Buffering…"); });
@@ -345,6 +686,7 @@
     setState("paused");
     hideSpinner();
     stage.classList.remove("controls-hidden");
+    try { if(IS_IFRAMED) parent.postMessage({type:"ss99:paused", url:S.url}, "*"); } catch(e){}
   });
   video.addEventListener("ended", function () { setState("paused"); });
   video.addEventListener("play", syncPlayIcon);
@@ -410,7 +752,7 @@
       if (!video.paused && !video.ended) {
         if (Math.abs(video.currentTime - S.lastTime) < 0.01) {
           S.stallTicks++;
-          if (S.stallTicks >= 4) {          /* ~2s frozen */
+          if (S.stallTicks >= 4) {
             handleStall();
             S.stallTicks = 0;
           }
@@ -432,7 +774,7 @@
         var target = S.hls.liveSyncPosition;
         if (target != null) video.currentTime = target;
       } else {
-        video.currentTime = video.currentTime + 0.1;  /* nudge */
+        video.currentTime = video.currentTime + 0.1;
       }
       S.hls.startLoad();
     } else if (S.isLive) {
@@ -464,7 +806,7 @@
     scheduleHide();
   }
   function scheduleHide() {
-    if (window.SS99_TV) return; /* keep controls visible on TV (pointerless) */
+    if (window.SS99_TV) return;
     clearTimeout(S.hideTimer);
     S.hideTimer = setTimeout(function () {
       if (!video.paused && !video.ended && menu.hidden) {
@@ -484,7 +826,12 @@
    * ------------------------------------------------------------------ */
   function togglePlay() {
     if (video.paused) {
-      if (!S.url) { selectStream(0); return; }
+      if (!S.url) {
+        // click-to-play: load first available stream (API or demo)
+        if (ALL_STREAMS && ALL_STREAMS[0]) selectStream(0);
+        else selectStream(0);
+        return;
+      }
       playWithFallback();
     } else {
       video.pause();
@@ -576,7 +923,32 @@
     S.seeking = false;
   });
 
-  /* Click surface: toggle play (ignore clicks on UI) */
+  /* Click surface: toggle play (ignore clicks on UI) — plus poster click-to-play */
+  // Poster is always click-to-play: clicking poster or its button starts playback
+  function posterClickHandler(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (stage.getAttribute("data-state") === "error" && S.url) {
+      posterTitle.textContent = "Stream Player";
+      posterSub.textContent = "Pick a stream or paste an API stream URL to start";
+      loadStream(S.url, S.kind, S.name);
+    } else if (!S.url) {
+      selectStream(0);
+    } else if (video.paused) {
+      playWithFallback();
+    } else {
+      // if already playing but poster still visible (idle), load first
+      selectStream(0);
+    }
+  }
+  poster.addEventListener("click", posterClickHandler);
+  posterBtn.addEventListener("click", posterClickHandler);
+  // Make poster keyboard accessible
+  poster.setAttribute("tabindex", "0");
+  poster.addEventListener("keydown", function(e){
+    if(e.key==="Enter"||e.key===" "){ e.preventDefault(); posterClickHandler(e); }
+  });
+
   stage.addEventListener("click", function (e) {
     if (e.target.closest(".player-controls, .player-menu, .player-stats, .player-poster, .player-unmute")) return;
     togglePlay();
@@ -723,23 +1095,39 @@
   });
 
   /* ------------------------------------------------------------------
-   * Stream list / custom URL / profiles
+   * Stream list / custom URL / profiles  — now unified (API + demo)
    * ------------------------------------------------------------------ */
   function renderStreamList() {
-    streamList.innerHTML = DEMO_STREAMS.map(function (s, i) {
-      return '<button class="stream-item' + (i === 0 ? " active" : "") + '" data-i="' + i + '">' +
+    // ALL_STREAMS is the merged API+demo list; render demo section as "Demo & fallback"
+    // If API channels loaded, they appear first via apiList; demo list shows remaining
+    // For backward compat, streamList shows ALL_STREAMS
+    streamList.innerHTML = ALL_STREAMS.map(function (s, i) {
+      var isActive = S.url ? (S.url === s.url) : (i === 0);
+      // Add click-to-play affordance: data-i + tabindex + role
+      return '<button class="stream-item' + (isActive ? " active" : "") + '" data-i="' + i + '" tabindex="0" role="button" aria-label="Play ' + escapeHtml(s.name) + '">' +
         '<span class="si-main"><strong>' + escapeHtml(s.name) + "</strong><small>" + escapeHtml(s.meta) + "</small></span>" +
         '<span class="si-badge' + (s.live ? " si-live" : "") + '">' + (s.live ? "LIVE" : s.kind.toUpperCase()) + "</span>" +
         "</button>";
     }).join("");
+    // Sync API list active states too
+    if (apiList) renderApiList();
+    updateEmbedCode();
   }
 
   function selectStream(i) {
-    var s = DEMO_STREAMS[i];
+    var s = ALL_STREAMS[i];
     if (!s) return;
     $all(".stream-item").forEach(function (b) {
-      b.classList.toggle("active", parseInt(b.getAttribute("data-i"), 10) === i);
+      b.classList.toggle("active", parseInt(b.getAttribute("data-i"), 10) === i || parseInt(b.getAttribute("data-api-i"),10)===i || parseInt(b.getAttribute("data-all-i"),10)===i);
     });
+    // Also sync api items
+    if (apiList) {
+      $all(".api-item", apiList).forEach(function(b){
+        var ai = parseInt(b.getAttribute("data-api-i"),10);
+        var allI = parseInt(b.getAttribute("data-all-i"),10);
+        b.classList.toggle("active", allI===i || (API_CHANNELS[ai] && API_CHANNELS[ai].url===s.url));
+      });
+    }
     loadStream(s.url, s.kind, s.name);
   }
 
@@ -747,16 +1135,33 @@
     var btn = e.target.closest("[data-i]");
     if (btn) selectStream(parseInt(btn.getAttribute("data-i"), 10));
   });
-
-  posterBtn.addEventListener("click", function () {
-    if (stage.getAttribute("data-state") === "error" && S.url) {
-      posterTitle.textContent = "Stream Player";
-      posterSub.textContent = "Pick a demo stream or paste an API stream URL to start";
-      loadStream(S.url, S.kind, S.name);
-    } else {
-      selectStream(0);
+  streamList.addEventListener("keydown", function(e){
+    if(e.key==="Enter"||e.key===" "){
+      var btn = e.target.closest("[data-i]");
+      if(btn){ e.preventDefault(); selectStream(parseInt(btn.getAttribute("data-i"),10)); }
     }
   });
+  if (apiList) {
+    apiList.addEventListener("click", function(e){
+      var btn = e.target.closest("[data-api-i]");
+      if(btn){
+        var idx = parseInt(btn.getAttribute("data-all-i"),10);
+        if(!isNaN(idx) && idx>=0) selectStream(idx);
+        else {
+          var ai = parseInt(btn.getAttribute("data-api-i"),10);
+          var ch = API_CHANNELS[ai];
+          if(ch) selectStreamByUrl(ch.url, ch.kind, ch.name);
+        }
+      }
+    });
+    apiList.addEventListener("keydown", function(e){
+      if(e.key==="Enter"||e.key===" "){
+        var btn = e.target.closest("[data-api-i]");
+        if(btn){ e.preventDefault(); btn.click(); }
+      }
+    });
+  }
+  if (apiRefresh) apiRefresh.addEventListener("click", fetchApiChannels);
 
   function loadFromInput() {
     var u = (urlInput.value || "").trim();
@@ -770,6 +1175,18 @@
   loadBtn.addEventListener("click", loadFromInput);
   urlInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter") loadFromInput();
+  });
+
+  // Embed code copy handlers
+  if (copyEmbedBtn) copyEmbedBtn.addEventListener("click", copyEmbedCode);
+  if (embedAutoplay) embedAutoplay.addEventListener("change", updateEmbedCode);
+  if (embedCodeEl) {
+    embedCodeEl.addEventListener("focus", function(){ this.select(); });
+    embedCodeEl.addEventListener("click", function(){ this.select(); });
+  }
+  if (embedPreviewBtn) embedPreviewBtn.addEventListener("click", function(){
+    var src = buildEmbedUrl(S.url);
+    window.open(src, "_blank");
   });
 
   function markActiveProfile() {
@@ -796,6 +1213,7 @@
   /* ------------------------------------------------------------------
    * Init
    * ------------------------------------------------------------------ */
+  applyEmbedMode();
   setState("idle");
   renderStreamList();
   buildSpeedMenu();
@@ -803,11 +1221,60 @@
   var v = parseFloat(null);
   try { v = parseFloat(localStorage.getItem("ss99-vol")); } catch (e) { /* noop */ }
   if (isNaN(v)) v = 1;
+  // If embed autoplay requested or iframed, start muted autoplay
+  if (QS_AUTOPLAY==="1" || (EMBED_MODE && QS_AUTOPLAY!=="0") || (IS_IFRAMED && EMBED_STREAM)) {
+    video.muted = QS_MUTED==="0" ? false : true;
+  }
   video.volume = Math.min(1, Math.max(0, v));
   syncVolUI();
   syncPlayIcon();
   updateEngineNote();
+  updateEmbedCode();
   if (!(video.requestPictureInPicture && document.pictureInPictureEnabled)) {
     btnPip.style.display = "none";
   }
+
+  // Kick off API channel pull (non-blocking, merges into list when ready)
+  fetchApiChannels();
+
+  // If ?stream= param present, load it immediately (deep-link / embed use-case)
+  if (EMBED_STREAM) {
+    var ekind = /\.m3u8/i.test(EMBED_STREAM) ? "hls" : /\.mp4/i.test(EMBED_STREAM) ? "mp4" : "hls";
+    var ename = QS_CHANNEL ? ("Channel " + QS_CHANNEL) : "Embedded stream";
+    // Delay slightly to allow fetch to start, but load requested stream right away
+    setTimeout(function(){
+      // If EMBED_STREAM looks like a channel code not a URL, try to resolve via API later
+      if (!/^https?:\/\//i.test(EMBED_STREAM) && API_CHANNELS.length) {
+        for (var i=0;i<API_CHANNELS.length;i++) if(API_CHANNELS[i].channel_code===EMBED_STREAM){ EMBED_STREAM=API_CHANNELS[i].url; ekind=API_CHANNELS[i].kind; ename=API_CHANNELS[i].name; break; }
+      }
+      if (/^https?:\/\//i.test(EMBED_STREAM)) {
+        loadStream(EMBED_STREAM, ekind, ename);
+        if (QS_AUTOPLAY==="1" || EMBED_MODE || IS_IFRAMED) playWithFallback();
+      }
+    }, 350);
+    // Also retry after API load (in case stream was a channel code)
+    var _apiPoll = setInterval(function(){
+      if (API_STATUS==="ok" && EMBED_STREAM && !/^https?:\/\//i.test(EMBED_STREAM)) {
+        for(var k=0;k<API_CHANNELS.length;k++) if(API_CHANNELS[k].channel_code===EMBED_STREAM){
+          clearInterval(_apiPoll);
+          loadStream(API_CHANNELS[k].url, API_CHANNELS[k].kind, API_CHANNELS[k].name);
+          break;
+        }
+      }
+      if(API_STATUS==="ok"||API_STATUS==="error") clearInterval(_apiPoll);
+    }, 1000);
+    setTimeout(function(){ clearInterval(_apiPoll); }, 12000);
+  } else if (QS_CHANNEL && !EMBED_STREAM) {
+    // ?channel=CODE without stream — will be handled after API fetch (see fetchApiChannels)
+  }
+
+  // Expose minimal API for debugging / external control
+  window.SS99_PLAYER = {
+    load: loadStream,
+    select: selectStream,
+    getState: function(){ return S; },
+    getAllStreams: function(){ return ALL_STREAMS; },
+    getApiChannels: function(){ return API_CHANNELS; },
+    refreshChannels: fetchApiChannels
+  };
 })();
