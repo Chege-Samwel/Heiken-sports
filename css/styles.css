@@ -1355,6 +1355,25 @@ code {
   outline-offset: -3px;
 }
 .player-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; background: #000; }
+.player-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; display: block; background: #000; }
+.player-frame[hidden] { display: none !important; }
+.player-guard {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 4;
+  background: transparent;
+  cursor: default;
+  /* capture all pointer events that are not on controls */
+}
+.player-guard[hidden] { display: none !important; }
+.player-stage[data-state="idle"] .player-guard,
+.player-stage[data-state="error"] .player-guard { display: none !important; }
+.player-stage[data-state="playing"] .player-guard,
+.player-stage[data-state="paused"] .player-guard,
+.player-stage[data-state="loading"] .player-guard { display: block; }
+/* when guard is active, video/frame should not receive direct clicks */
+.player-stage.guard-active .player-video,
+.player-stage.guard-active .player-frame { pointer-events: none; }
 
 .player-stage[data-state="idle"] .player-controls,
 .player-stage[data-state="error"] .player-controls { display: none; }
@@ -1715,6 +1734,7 @@ code {
   white-space: nowrap;
 }
 .si-badge.si-live { color: #fca5a5; border-color: rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.12); }
+.si-badge.si-embed { color: #c4b5fd; border-color: rgba(139, 92, 246, 0.5); background: rgba(139, 92, 246, 0.13); }
 
 .side-label {
   display: block;

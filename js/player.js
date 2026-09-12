@@ -71,6 +71,14 @@
   var copyEmbedBtn= $("#copyEmbedBtn");
   var embedAutoplay = $("#embedAutoplay");
   var embedPreviewBtn = $("#embedPreviewBtn");
+  var frame       = $("#demoFrame");
+  var guard       = $("#playerGuard");
+
+  // Click-restriction guard: block any click that is not a control.
+  // The embed often contains ad-redirects on stray clicks, so we intercept
+  // everything on the stage that isn't a button/control and only allow
+  // explicit control interactions.
+  var RESTRICT_CLICKS = true;
 
   var HlsRef     = typeof Hls !== "undefined" ? Hls : null;
   var MSE_OK     = !!(HlsRef && HlsRef.isSupported && HlsRef.isSupported());
@@ -98,6 +106,34 @@
   var IS_IFRAMED = (function(){ try { return window.self !== window.top; } catch(e){ return false; } })();
 
   /* ------------------------------------------------------------------
+   * Iframe/helpers — detect ad-heavy embeds that need click guard
+   * ------------------------------------------------------------------ */
+  function isIframeUrl(u) {
+    if (!u || typeof u !== "string") return false;
+    // Explicit iframe markers or non-HLS/MP4 URLs are treated as embed
+    if (/\.m3u8(\?|#|$)/i.test(u) || /\.mp4(\?|#|$)/i.test(u) || /\.webm(\?|#|$)/i.test(u)) return false;
+    // Many API embeds are /embed/, /player/, /channel/ with no extension,
+    // or third-party iframe hosts
+    return true;
+  }
+  function detectKind(u) {
+    if (/\.m3u8(\?|#|$)/i.test(u)) return "hls";
+    if (/\.mp4(\?|#|$)/i.test(u)) return "mp4";
+    if (/\.webm(\?|#|$)/i.test(u)) return "mp4";
+    if (isIframeUrl(u)) return "iframe";
+    return "hls";
+  }
+  function isAdHeavyEmbed(u) {
+    // Free-plan streams and embeds are ad-supported — enable guard for them
+    // Always restrict when EMBED_MODE or when URL looks like an embed
+    if (EMBED_MODE || IS_IFRAMED) return true;
+    if (isIframeUrl(u)) return true;
+    // HLS/MP4 from API is also ad-supported on free plan
+    if (u && u.indexOf("cdnlivetv.is") !== -1) return true;
+    return RESTRICT_CLICKS;
+  }
+
+  /* ------------------------------------------------------------------
    * Demo streams (public test feeds) — fallback when API unavailable
    * ------------------------------------------------------------------ */
   var DEMO_STREAMS = [
@@ -120,41 +156,31 @@
   function apiUrl(path) { return API_BASE + path + API_QUERY; }
 
   function normalizeApiItem(raw) {
-    // Handles several shapes:
-    //  - channel object: {channel_name, channel_code, image, streams: [{stream_url}]}
-    //  - event object with homeTeam/awayTeam + channels[]
-    //  - event object with event/eventIMG + channels[]
-    //  - flat channel with url/stream_url
     try {
-      // If it's an event with channels array, pick its first playable stream
       if (raw && raw.channels && Array.isArray(raw.channels) && raw.channels.length) {
         var ch = raw.channels[0];
         var streamUrl = ch.stream_url || ch.url || ch.link || ch.href || ch.src || "";
-        // Some channel entries use image field for playable HLS url (rare) — guard
         if (!streamUrl && ch.image && /\.m3u8/i.test(ch.image)) streamUrl = ch.image;
         if (!streamUrl) {
-          // Try nested streams
           if (ch.streams && ch.streams[0]) streamUrl = ch.streams[0].stream_url || ch.streams[0].url || "";
         }
         if (!streamUrl) return null;
         var evName = raw.homeTeam ? (raw.homeTeam + " vs " + raw.awayTeam)
                    : raw.event ? raw.event
                    : (raw.tournament ? raw.tournament : (ch.channel_name || ch.name || "Live event"));
-        var meta = raw.tournament ? (raw.tournament + " · LIVE") : (ch.channel_name ? ch.channel_name + " · LIVE" : "LIVE · HLS");
-        var kind = /\.m3u8/i.test(streamUrl) ? "hls" : /\.mp4/i.test(streamUrl) ? "mp4" : "hls";
+        var meta = raw.tournament ? (raw.tournament + " · LIVE") : (ch.channel_name ? ch.channel_name + " · LIVE" : "LIVE · " + (detectKind(streamUrl)==="iframe"?"EMBED":detectKind(streamUrl).toUpperCase()));
+        var kind = detectKind(streamUrl);
         return { name: evName, meta: meta, url: streamUrl, kind: kind, live: true, image: ch.image || raw.homeTeamIMG || raw.eventIMG || "", channel_code: ch.channel_code || "" };
       }
-      // Flat channel
       var name = raw.channel_name || raw.name || raw.title || raw.channel || "Channel";
       var code = raw.channel_code || raw.code || raw.id || "";
       var image = raw.image || raw.logo || raw.img || "";
       var url = raw.stream_url || raw.url || raw.link || raw.href || raw.src || "";
       if (!url && raw.streams && raw.streams[0]) url = raw.streams[0].stream_url || raw.streams[0].url || "";
       if (!url) return null;
-      var isHls = /\.m3u8(\?|#|$)/i.test(url);
-      var isMp4 = /\.mp4(\?|#|$)/i.test(url);
-      var k = isHls ? "hls" : isMp4 ? "mp4" : "hls";
-      return { name: name, meta: (code ? code + " · " : "") + (k === "hls" ? "LIVE · HLS" : "LIVE · MP4"), url: url, kind: k, live: true, image: image, channel_code: code };
+      var kind2 = detectKind(url);
+      var label = kind2==="iframe" ? "EMBED" : kind2.toUpperCase();
+      return { name: name, meta: (code ? code + " · " : "") + "LIVE · " + label, url: url, kind: kind2, live: true, image: image, channel_code: code };
     } catch (e) { return null; }
   }
 
@@ -189,7 +215,8 @@
           var u2 = ch2.stream_url || ch2.url || "";
           if (u2) {
             var evName2 = arr[i].homeTeam ? (arr[i].homeTeam + " vs " + arr[i].awayTeam) : (arr[i].event || ch2.channel_name || "Channel");
-            out.push({ name: evName2 + " ("+ (ch2.channel_name||"ch "+(c+1)) +")", meta: (ch2.channel_name||"LIVE") + " · HLS", url: u2, kind: /\.m3u8/i.test(u2)?"hls":"mp4", live: true, image: ch2.image||"", channel_code: ch2.channel_code||"" });
+            var k2 = detectKind(u2);
+            out.push({ name: evName2 + " ("+ (ch2.channel_name||"ch "+(c+1)) +")", meta: (ch2.channel_name||"LIVE") + " · " + (k2==="iframe"?"EMBED":k2.toUpperCase()), url: u2, kind: k2, live: true, image: ch2.image||"", channel_code: ch2.channel_code||"" });
           }
         }
       }
@@ -293,9 +320,11 @@
       var idx = -1;
       // find index in ALL_STREAMS
       for (var j=0;j<ALL_STREAMS.length;j++) if (ALL_STREAMS[j].url===c.url) { idx=j; break; }
+      var badgeLabelApi = c.kind === "iframe" ? "EMBED" : "LIVE";
+      var badgeClsApi = c.kind === "iframe" ? " si-embed" : " si-live";
       html += '<button class="stream-item api-item' + (ALL_STREAMS[idx] && S.url===ALL_STREAMS[idx].url ? ' active' : '') + '" data-api-i="'+i+'" data-all-i="'+idx+'" title="'+escapeHtml(c.url)+'">'
             + '<span class="si-main"><strong>' + escapeHtml(c.name) + '</strong><small>' + escapeHtml(c.meta) + '</small></span>'
-            + '<span class="si-badge si-live">LIVE</span>'
+            + '<span class="si-badge' + badgeClsApi + '">' + badgeLabelApi + '</span>'
             + '</button>';
     }
     apiList.innerHTML = html;
@@ -381,6 +410,12 @@
   function setState(st) {
     stage.setAttribute("data-state", st);
     poster.hidden = !(st === "idle" || st === "error");
+    // guard: visible whenever a stream is loaded (not idle/error) — it blocks stray clicks that ad-embeds hijack
+    if (guard) {
+      var showGuard = RESTRICT_CLICKS && !(st === "idle" || st === "error");
+      guard.hidden = !showGuard;
+      stage.classList.toggle("guard-active", showGuard);
+    }
   }
 
   function updateEngineNote() {
@@ -458,7 +493,7 @@
     var d = e.data;
     if (!d || typeof d !== "object") return;
     if (d.type === "ss99:load" && d.url) {
-      var k = /\.m3u8/i.test(d.url) ? "hls" : /\.mp4/i.test(d.url) ? "mp4" : "hls";
+      var k = detectKind(d.url);
       var n = d.name || "Embedded stream";
       loadStream(d.url, k, n);
       if (d.autoplay !== false) playWithFallback();
@@ -483,6 +518,14 @@
     }
     video.removeAttribute("src");
     try { video.load(); } catch (e) { /* noop */ }
+    if (frame) {
+      try { frame.removeAttribute("src"); } catch(e){}
+      frame.hidden = true;
+      frame.style.display = "none";
+    }
+    video.hidden = false;
+    video.style.display = "";
+    if (guard) { guard.hidden = true; stage.classList.remove("guard-active"); }
     S.engine = "—";
     S.isLive = false;
   }
@@ -519,6 +562,12 @@
     try {
       if (IS_IFRAMED) parent.postMessage({type:"ss99:loading", url:url, name:name}, "*");
     } catch(e){}
+
+    // iframe embeds - sandboxed, with guard to block ad-redirects
+    if (kind === "iframe" || isIframeUrl(url)) {
+      attachIframe(url);
+      return;
+    }
 
     if (kind === "hls") {
       if (MSE_OK) {
@@ -604,8 +653,48 @@
 
   function attachNative(url, engineLabel) {
     S.engine = engineLabel;
+    video.hidden = false;
+    video.style.display = "";
+    if (frame) { frame.hidden = true; frame.style.display = "none"; }
     video.src = url;
     updateEngineNote();
+  }
+
+  function attachIframe(url) {
+    // Hide video, show sandboxed iframe. Guard stays on top to block stray ad clicks.
+    S.engine = "iframe embed";
+    S.isLive = true;
+    if (video) { video.hidden = true; video.style.display = "none"; try { video.pause(); } catch(e){} }
+    if (frame) {
+      frame.hidden = false;
+      frame.style.display = "block";
+      // Enforce sandbox that blocks top navigation and popups (ad redirects)
+      frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-presentation allow-encrypted-media");
+      frame.setAttribute("allow", "autoplay; fullscreen; encrypted-media; picture-in-picture");
+      frame.setAttribute("referrerpolicy", "no-referrer-when-downgrade");
+      // Use src directly — no prefetch needed
+      frame.src = url;
+    }
+    updateEngineNote();
+    syncLiveUI();
+    // iframe embeds can't be controlled via HLS — show as playing once loaded
+    showSpinner("Loading embed…");
+    // When iframe loads, hide spinner and treat as playing (controls are limited)
+    var onLoad = function() {
+      hideSpinner();
+      setState("playing");
+      showControls();
+      // Guard must be visible to intercept ad clicks on the iframe surface
+      if (guard) { guard.hidden = false; stage.classList.add("guard-active"); }
+      updateEngineNote();
+    };
+    if (frame) {
+      frame.onload = onLoad;
+      // Fallback if onload doesn't fire (cross-origin) — assume ready after 1.2s
+      setTimeout(function(){ if (stage.getAttribute("data-state")==="loading") onLoad(); }, 1200);
+    }
+    // No quality levels for iframe
+    if (qualityGroup) qualityGroup.style.display = "none";
   }
 
   function onHlsError(e, data) {
@@ -825,6 +914,7 @@
    * Controls: buttons
    * ------------------------------------------------------------------ */
   function togglePlay() {
+    if (S.kind === "iframe") { showControls(); return; }
     if (video.paused) {
       if (!S.url) {
         // click-to-play: load first available stream (API or demo)
@@ -949,14 +1039,71 @@
     if(e.key==="Enter"||e.key===" "){ e.preventDefault(); posterClickHandler(e); }
   });
 
+  // Guard: intercept any click on the media surface that is not a control.
+  // This blocks ad-redirects that hijack stray clicks on free embeds.
+  // Controls (play/mute/etc.), poster, stats, menu, and unmute pill are allow-listed.
+  function isControlTarget(el) {
+    return !!(el && el.closest && el.closest(".player-controls, .player-menu, .player-stats, .player-poster, .player-unmute, .player-guard"));
+  }
+  if (guard) {
+    // Capture-phase on guard to stop ad redirects before they bubble
+    guard.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      // In restricted mode, guard clicks only reveal controls — they do NOT toggle play
+      // and they do NOT propagate to the underlying video/iframe (which may be an ad embed).
+      showControls();
+      // Do not togglePlay here — only explicit controls (btnPlay, poster) control playback
+    }, true);
+    guard.addEventListener("dblclick", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      // double-click on guard toggles fullscreen (explicit control) but still blocks underlying
+      toggleFs();
+    }, true);
+    // Block aux clicks (middle-click) and context menu that some embeds abuse
+    guard.addEventListener("auxclick", function(e){ e.preventDefault(); e.stopPropagation(); }, true);
+    guard.addEventListener("contextmenu", function(e){
+      // Allow context menu only if user explicitly wants it — but block if it would trigger redirect
+      // We'll allow default but stop propagation to underlying iframe
+      e.stopPropagation();
+    }, true);
+  }
+  // Stage-level fallback: any click not on an allowed control is blocked when guard is active
   stage.addEventListener("click", function (e) {
-    if (e.target.closest(".player-controls, .player-menu, .player-stats, .player-poster, .player-unmute")) return;
+    var isControl = e.target.closest(".player-controls, .player-menu, .player-stats, .player-poster, .player-unmute, .player-guard");
+    if (isControl) return;
+    // If guard is active (restricted mode and a stream is loaded), block the click
+    if (RESTRICT_CLICKS && guard && !guard.hidden) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      showControls();
+      return;
+    }
+    // Non-restricted legacy: allow click-to-play on the stage surface
     togglePlay();
-  });
+  }, true);
   stage.addEventListener("dblclick", function (e) {
-    if (e.target.closest(".player-controls, .player-menu, .player-stats, .player-poster, .player-unmute")) return;
+    if (e.target.closest(".player-controls, .player-menu, .player-stats, .player-poster, .player-unmute, .player-guard")) return;
+    if (RESTRICT_CLICKS && guard && !guard.hidden) {
+      e.preventDefault(); e.stopPropagation();
+      return;
+    }
     toggleFs();
-  });
+  }, true);
+  // Also block clicks that try to bubble to window (some ad scripts listen on document)
+  stage.addEventListener("click", function(e){
+    if (RESTRICT_CLICKS && guard && !guard.hidden) {
+      var isCtrl = e.target.closest(".player-controls, .player-menu, .player-stats, .player-poster, .player-unmute");
+      if (!isCtrl) {
+        // Already handled above, but double-guard for capture vs bubble
+        e.stopPropagation();
+      }
+    }
+  }, false);
 
   /* ------------------------------------------------------------------
    * Settings menu (quality + speed)
@@ -964,6 +1111,7 @@
   function closeMenu() { menu.hidden = true; }
 
   function buildQualityMenu() {
+    if (S.kind === "iframe" || isIframeUrl(S.url)) { if (qualityGroup) qualityGroup.style.display = "none"; return; }
     if (!S.hls || !S.hls.levels || !S.hls.levels.length) {
       qualityGroup.style.display = "none";
       return;
@@ -1103,10 +1251,12 @@
     // For backward compat, streamList shows ALL_STREAMS
     streamList.innerHTML = ALL_STREAMS.map(function (s, i) {
       var isActive = S.url ? (S.url === s.url) : (i === 0);
+      var badgeLabel = s.kind === "iframe" ? "EMBED" : (s.live ? "LIVE" : s.kind.toUpperCase());
+      var badgeCls = s.kind === "iframe" ? " si-embed" : (s.live ? " si-live" : "");
       // Add click-to-play affordance: data-i + tabindex + role
       return '<button class="stream-item' + (isActive ? " active" : "") + '" data-i="' + i + '" tabindex="0" role="button" aria-label="Play ' + escapeHtml(s.name) + '">' +
         '<span class="si-main"><strong>' + escapeHtml(s.name) + "</strong><small>" + escapeHtml(s.meta) + "</small></span>" +
-        '<span class="si-badge' + (s.live ? " si-live" : "") + '">' + (s.live ? "LIVE" : s.kind.toUpperCase()) + "</span>" +
+        '<span class="si-badge' + badgeCls + '">' + badgeLabel + "</span>" +
         "</button>";
     }).join("");
     // Sync API list active states too
@@ -1167,7 +1317,7 @@
     var u = (urlInput.value || "").trim();
     if (!u) { toastP("Paste a stream URL first"); return; }
     if (!/^https?:\/\//i.test(u)) { toastP("URL must start with http:// or https://"); return; }
-    var kind = /\.m3u8(\?|#|$)/i.test(u) ? "hls" : "mp4";
+    var kind = detectKind(u);
     $all(".stream-item").forEach(function (b) { b.classList.remove("active"); });
     loadStream(u, kind, "Custom stream");
   }
@@ -1239,7 +1389,7 @@
 
   // If ?stream= param present, load it immediately (deep-link / embed use-case)
   if (EMBED_STREAM) {
-    var ekind = /\.m3u8/i.test(EMBED_STREAM) ? "hls" : /\.mp4/i.test(EMBED_STREAM) ? "mp4" : "hls";
+    var ekind = detectKind(EMBED_STREAM);
     var ename = QS_CHANNEL ? ("Channel " + QS_CHANNEL) : "Embedded stream";
     // Delay slightly to allow fetch to start, but load requested stream right away
     setTimeout(function(){

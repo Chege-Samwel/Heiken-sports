@@ -267,6 +267,8 @@
           <div class="player-main">
             <div class="player-stage" id="playerStage" data-state="idle" tabindex="0" aria-label="Stream player demo — press space to play">
               <video id="demoVideo" class="player-video" playsinline preload="auto"></video>
+              <iframe id="demoFrame" class="player-frame" hidden title="Stream embed" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-encrypted-media" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" referrerpolicy="no-referrer-when-downgrade" loading="lazy"></iframe>
+              <div class="player-guard" id="playerGuard" aria-hidden="true" hidden></div>
 
               <div class="player-poster" id="playerPoster">
                 <div class="poster-glow" aria-hidden="true"></div>
